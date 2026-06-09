@@ -13,8 +13,8 @@
  * adversarial ad can never crash the decision loop.
  *
  * This file grows across plans 02-01..02-04 (D-01..D-12). Plan 02-01 landed the
- * first two responsibilities; Plan 02-02 added the selector; Plan 02-03 adds the
- * shop decision:
+ * first two responsibilities; Plan 02-02 added the selector; Plan 02-03 added the
+ * shop decision; Plan 02-04 completes the core with the two state-merge helpers:
  *   - rankProbability (STRAT-01 / D-01): exact-string lookup, integer ranks
  *     0–10, unknown → 0, never throws.
  *   - filterEligibleAds (STRAT-02 / D-02 / D-03): drops expired, sub-floor
@@ -32,9 +32,14 @@
  *     affordable non-`hpot` upgrade while reserving HEAL_BUFFER_GOLD. Costs are
  *     read live from the passed-in shop list (never hardcoded); returns `null`
  *     when nothing should be bought. Never throws, never mutates its inputs.
+ *   - applySolveResult / applyBuyResult (STRAT-06 / D-12): fold a `SolveResult` /
+ *     `BuyResult` into the prior `GameState` WITHOUT clobbering the field the
+ *     response omits — a solve carries `level` forward (it has none), a buy
+ *     carries `score`/`highScore` forward (it has neither). Both return a NEW
+ *     `GameState` via spread and never mutate the prior one.
  */
 
-import type { Ad, GameState, ShopItem } from "./types.js";
+import type { Ad, BuyResult, GameState, ShopItem, SolveResult } from "./types.js";
 
 /** Probability floor: only attempt ads ranked `Hmmm....` (6) or safer (D-02). */
 const PROBABILITY_FLOOR_RANK = 6;
@@ -206,4 +211,52 @@ export function chooseShopPurchase(state: GameState, shop: ShopItem[]): ShopItem
   return affordableUpgrades.reduce((priciest, candidate) =>
     candidate.cost > priciest.cost ? candidate : priciest,
   );
+}
+
+/**
+ * Fold a `SolveResult` into the prior `GameState` (STRAT-06 / D-12).
+ *
+ * The solve/buy responses are intentionally asymmetric: a `SolveResult` has NO
+ * `level` field (see `types.ts`). A naive "replace state with the response"
+ * would therefore reset `level` to undefined every turn. Instead, spread the
+ * prior `state` first and override ONLY the fields the result carries — so
+ * `level` (and `gameId`) are preserved from the prior state.
+ *
+ * Pure: spreads into a NEW object and never mutates the prior `state`.
+ */
+export function applySolveResult(state: GameState, result: SolveResult): GameState {
+  return {
+    ...state, // gameId + level carried forward (SolveResult has no level)
+    lives: result.lives,
+    gold: result.gold,
+    score: result.score,
+    highScore: result.highScore,
+    turn: result.turn,
+  };
+}
+
+/**
+ * Fold a `BuyResult` into the prior `GameState` (STRAT-06 / D-12).
+ *
+ * Mirror image of the solve merge: a `BuyResult` has NO `score`/`highScore`
+ * (see `types.ts`) but DOES carry `level`. Spread the prior `state` first and
+ * override ONLY the fields the result carries — so `score`/`highScore` (and
+ * `gameId`) are preserved from the prior state.
+ *
+ * This is the load-bearing half: `api.ts buy()` returns a standalone `GameState`
+ * with `score: 0`/`highScore: 0` placeholders (it has no prior state to merge).
+ * Consuming the RAW `BuyResult` here means those placeholders are irrelevant —
+ * the threaded `score`/`highScore` come from the prior `state`, never the
+ * result — so the final reported score is never silently corrupted by a buy.
+ *
+ * Pure: spreads into a NEW object and never mutates the prior `state`.
+ */
+export function applyBuyResult(state: GameState, result: BuyResult): GameState {
+  return {
+    ...state, // gameId + score + highScore carried forward (BuyResult has none)
+    lives: result.lives,
+    gold: result.gold,
+    level: result.level,
+    turn: result.turn,
+  };
 }
