@@ -63,19 +63,36 @@ function rot13(input: string): string {
 }
 
 /**
+ * A field decoder: returns the decoded string, or `undefined` to signal a
+ * decode failure (so the caller can honor the all-or-none guarantee).
+ */
+type FieldDecoder = (input: string) => string | undefined;
+
+/**
+ * Pick the decoder for a scheme, or `undefined` for plaintext
+ * (`null`/`undefined`/`0`) and unknown schemes — both of which pass through
+ * unchanged.
+ */
+function decoderFor(encrypted: number | undefined | null): FieldDecoder | undefined {
+  switch (encrypted) {
+    case ENCRYPTED_BASE64:
+      return decodeBase64;
+    case ENCRYPTED_ROT13:
+      // rot13 is total (cannot fail), but matches the FieldDecoder shape.
+      return rot13;
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Decode an encrypted ad across all three string fields, or return it unchanged.
  *
  * Pure: returns a NEW `Ad` on success, the ORIGINAL reference on pass-through;
  * never mutates the input.
  */
 export function decodeAd(ad: Ad): Ad {
-  const decode =
-    ad.encrypted === ENCRYPTED_BASE64
-      ? decodeBase64
-      : ad.encrypted === ENCRYPTED_ROT13
-        ? // rot13 is total, so wrap it to match the `string | undefined` shape.
-          (s: string): string => rot13(s)
-        : undefined;
+  const decode = decoderFor(ad.encrypted);
 
   // Plaintext (null/undefined/0) or unknown scheme: pass through unchanged.
   if (decode === undefined) {
