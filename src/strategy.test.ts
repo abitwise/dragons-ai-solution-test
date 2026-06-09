@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { chooseAd, chooseShopPurchase, filterEligibleAds, rankProbability } from "./strategy.js";
-import type { Ad, GameState, ShopItem } from "./types.js";
+import {
+  applyBuyResult,
+  applySolveResult,
+  chooseAd,
+  chooseShopPurchase,
+  filterEligibleAds,
+  rankProbability,
+} from "./strategy.js";
+import type { Ad, BuyResult, GameState, ShopItem, SolveResult } from "./types.js";
 
 /**
  * Pure-function suite for the strategy core (Plans 02-01, 02-02, 02-03).
@@ -22,6 +29,13 @@ import type { Ad, GameState, ShopItem } from "./types.js";
  *     allows; otherwise — only when lives are healthy — buys the priciest
  *     affordable non-`hpot` upgrade while reserving a 100-gold healing buffer;
  *     returns `null` when nothing should be bought; never throws, never mutates.
+ *   - `applySolveResult` / `applyBuyResult` (STRAT-06 / D-12): pure state-merge
+ *     helpers that fold a `SolveResult` / `BuyResult` into the prior `GameState`
+ *     WITHOUT clobbering the field each response omits — a solve carries `level`
+ *     forward (it has none), a buy carries `score`/`highScore` forward (it has
+ *     neither). Both return a NEW `GameState` and never mutate the prior one;
+ *     the buy merge restores the `score:0`/`highScore:0` placeholder that
+ *     `api.ts buy()` writes for its standalone shape.
  *
  * All fixtures are plain objects — no mocks, no FakeApiClient, no network
  * (TEST-01). The unit under test is `strategy.ts`, which imports only types.
@@ -56,6 +70,42 @@ function baseState(overrides: Partial<GameState> = {}): GameState {
 /** A single shop catalog item; cost is what the decision must read LIVE (never a hardcoded literal). */
 function shopItem(id: string, cost: number, name = id): ShopItem {
   return { id, name, cost };
+}
+
+/**
+ * A complete `SolveResult` we spread-merge per merge case. NOTE: a solve result
+ * has NO `level` key — that is the half of the asymmetry `applySolveResult`
+ * carries forward from the prior state (D-12). Defaults differ from `baseState`
+ * so a merge that wrongly drops a field is caught.
+ */
+function baseSolve(overrides: Partial<SolveResult> = {}): SolveResult {
+  return {
+    success: true,
+    lives: 5,
+    gold: 250,
+    score: 1200,
+    highScore: 1500,
+    turn: 9,
+    message: "Quest cleared",
+    ...overrides,
+  };
+}
+
+/**
+ * A complete `BuyResult` we spread-merge per merge case. NOTE: a buy result has
+ * NO `score`/`highScore` keys but DOES carry `level` — the mirror image of
+ * `SolveResult`. `applyBuyResult` carries `score`/`highScore` forward from the
+ * prior state (D-12), restoring the `score:0` placeholder `api.ts buy()` writes.
+ */
+function baseBuy(overrides: Partial<BuyResult> = {}): BuyResult {
+  return {
+    shoppingSuccess: true,
+    gold: 80,
+    lives: 4,
+    level: 7,
+    turn: 11,
+    ...overrides,
+  };
 }
 
 describe("rankProbability", () => {
@@ -473,6 +523,124 @@ describe("chooseShopPurchase (STRAT-04 / STRAT-05)", () => {
 
       expect(state).toEqual(stateSnapshot);
       expect(shop).toEqual(shopSnapshot);
+    });
+  });
+});
+
+describe("applySolveResult (STRAT-06 / D-12)", () => {
+  describe("merge carries `level` forward (a solve result omits it)", () => {
+    it("keeps the prior state's `level` while adopting the solve result's fields", () => {
+      // Prior state has a distinctive level (4) that the SolveResult cannot
+      // carry (it has no `level` key). Every other field in the result differs
+      // from the prior state, so a merge that drops one is caught.
+      const prior = baseState({
+        gameId: "g-merge",
+        lives: 1,
+        gold: 10,
+        level: 4,
+        score: 0,
+        highScore: 0,
+        turn: 2,
+      });
+      const result = baseSolve({
+        lives: 5,
+        gold: 250,
+        score: 1200,
+        highScore: 1500,
+        turn: 9,
+      });
+
+      const merged = applySolveResult(prior, result);
+
+      expect(merged.level).toBe(4); // carried forward from prior — SolveResult has no level
+      expect(merged.lives).toBe(5);
+      expect(merged.gold).toBe(250);
+      expect(merged.score).toBe(1200);
+      expect(merged.highScore).toBe(1500);
+      expect(merged.turn).toBe(9);
+      expect(merged.gameId).toBe("g-merge"); // gameId carried forward from prior
+    });
+
+    it("preserves any prior `level`, not just a fixed one", () => {
+      const merged = applySolveResult(baseState({ level: 12 }), baseSolve());
+      expect(merged.level).toBe(12);
+    });
+  });
+
+  describe("purity (D-12)", () => {
+    it("returns a NEW object, not the prior state reference", () => {
+      const prior = baseState({ level: 4 });
+      expect(applySolveResult(prior, baseSolve())).not.toBe(prior);
+    });
+
+    it("does not mutate the prior state object", () => {
+      const prior = baseState({ level: 4, gold: 10, turn: 2 });
+      const snapshot = { ...prior };
+
+      applySolveResult(prior, baseSolve());
+
+      expect(prior).toEqual(snapshot); // pure: prior state object never mutated
+    });
+  });
+});
+
+describe("applyBuyResult (STRAT-06 / D-12)", () => {
+  describe("merge carries `score`/`highScore` forward (a buy result omits both)", () => {
+    it("keeps the prior state's `score`/`highScore` while adopting the buy result's fields", () => {
+      // Prior state has a distinctive score (700) and highScore (900) the
+      // BuyResult cannot carry (it has neither key). gold/lives/level/turn all
+      // differ, so a merge that drops one is caught.
+      const prior = baseState({
+        gameId: "g-buy",
+        lives: 2,
+        gold: 500,
+        level: 1,
+        score: 700,
+        highScore: 900,
+        turn: 3,
+      });
+      const result = baseBuy({
+        gold: 80,
+        lives: 4,
+        level: 7,
+        turn: 11,
+      });
+
+      const merged = applyBuyResult(prior, result);
+
+      expect(merged.score).toBe(700); // carried forward — BuyResult has no score
+      expect(merged.highScore).toBe(900); // carried forward — BuyResult has no highScore
+      expect(merged.gold).toBe(80);
+      expect(merged.lives).toBe(4);
+      expect(merged.level).toBe(7);
+      expect(merged.turn).toBe(11);
+      expect(merged.gameId).toBe("g-buy"); // gameId carried forward from prior
+    });
+
+    it("restores the score the api.ts buy() placeholder zeroed (the STRAT-06 subtlety)", () => {
+      // The threaded `score` lives only in the prior state; the BuyResult never
+      // carries it. Merging into a prior state with score 700 must yield 700,
+      // NOT the 0 that api.ts buy() writes for its standalone GameState shape —
+      // otherwise the final reported score would be silently corrupted each buy.
+      const merged = applyBuyResult(baseState({ score: 700, highScore: 900 }), baseBuy());
+      expect(merged.score).toBe(700);
+      expect(merged.highScore).toBe(900);
+    });
+  });
+
+  describe("purity (D-12)", () => {
+    it("returns a NEW object, not the prior state reference", () => {
+      const prior = baseState({ score: 700, highScore: 900 });
+      expect(applyBuyResult(prior, baseBuy())).not.toBe(prior);
+    });
+
+    it("does not mutate the prior state object", () => {
+      const prior = baseState({ score: 700, highScore: 900, gold: 500, turn: 3 });
+      const snapshot = { ...prior };
+
+      applyBuyResult(prior, baseBuy());
+
+      expect(prior).toEqual(snapshot); // pure: prior state object never mutated
     });
   });
 });
