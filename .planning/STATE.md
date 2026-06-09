@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-09T09:08:49.367Z"
+last_updated: "2026-06-09T09:14:03.875Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 ## Current Position
 
 Phase: 01 (foundation-types-api-client-test-seam) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-06-09
 
-Progress: [█████░░░░░] 50%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [█████░░░░░] 50%
 *Updated after each plan completion*
 | Phase 01 P01-01 | 5 | 3 tasks | 5 files |
 | Phase 01 P01-02 | 2 | 3 tasks | 2 files |
+| Phase 01 P01-03 | 15 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 1: ApiClient interface defined as the injectable TDD seam in types.ts; consumers depend on the interface, never on fetch.
 - [Phase ?]: Phase 1: Pinned TypeScript to ~5.9 (5.9.3); TS 6.0 excluded per CLAUDE.md. Ad.probability is free-text string and Ad.encrypted is optional number (D-02).
 - [Phase ?]: Phase 1 (01-02): decodeAd is a separate pure step from zod (D-03); decodes all three fields or none (D-08/D-09); Base64 guarded by regex + length + round-trip re-encode to defeat Buffer.from leniency; cleared flag is 0.
+- [Phase ?]: Phase 1 (01-03): FakeApiClient is a scripted/programmable double (D-07) — per-method array queue OR function source; NO game logic inside; exhausted/absent queue rejects with an Error naming the method (T-01-06).
+- [Phase ?]: Phase 1 (01-03): ApiClient double methods are async so a fail-loud throw surfaces as a rejected promise; the offline test seam (FakeApiClient, not HttpApiClient) is what Phases 2-3 wire — zero live network calls, no nock/msw.
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T09:08:40.212Z
+Last session: 2026-06-09T09:13:27.166Z
 Stopped at: Phase 1 context gathered
 Resume file: None
