@@ -29,13 +29,13 @@ import type { Ad, BuyResult, GameState, ShopItem, SolveResult } from "./types.js
  *     allows; otherwise — only when lives are healthy — buys the priciest
  *     affordable non-`hpot` upgrade while reserving a 100-gold healing buffer;
  *     returns `null` when nothing should be bought; never throws, never mutates.
- *   - `applySolveResult` / `applyBuyResult` (STRAT-06 / D-12): pure state-merge
- *     helpers that fold a `SolveResult` / `BuyResult` into the prior `GameState`
- *     WITHOUT clobbering the field each response omits — a solve carries `level`
- *     forward (it has none), a buy carries `score`/`highScore` forward (it has
- *     neither). Both return a NEW `GameState` and never mutate the prior one;
- *     the buy merge restores the `score:0`/`highScore:0` placeholder that
- *     `api.ts buy()` writes for its standalone shape.
+ *   - `applySolveResult` / `applyBuyResult` (STRAT-06 / D-12 / WR-02): pure
+ *     state-merge helpers that fold a `SolveResult` / `BuyResult` into the prior
+ *     `GameState` WITHOUT clobbering the field each response omits — a solve
+ *     carries `level` forward (it has none), a buy carries `score`/`highScore`
+ *     forward (it has neither). Both return a NEW `GameState` and never mutate
+ *     the prior one. `ApiClient.buy()` returns the raw `BuyResult` this folds,
+ *     so the prior `score`/`highScore` survive every buy (WR-02 seam guard).
  *
  * All fixtures are plain objects — no mocks, no FakeApiClient, no network
  * (TEST-01). The unit under test is `strategy.ts`, which imports only types.
@@ -95,7 +95,7 @@ function baseSolve(overrides: Partial<SolveResult> = {}): SolveResult {
  * A complete `BuyResult` we spread-merge per merge case. NOTE: a buy result has
  * NO `score`/`highScore` keys but DOES carry `level` — the mirror image of
  * `SolveResult`. `applyBuyResult` carries `score`/`highScore` forward from the
- * prior state (D-12), restoring the `score:0` placeholder `api.ts buy()` writes.
+ * prior state (D-12); this is the raw shape `ApiClient.buy()` returns (WR-02).
  */
 function baseBuy(overrides: Partial<BuyResult> = {}): BuyResult {
   return {
@@ -587,7 +587,10 @@ describe("chooseShopPurchase (STRAT-04 / STRAT-05)", () => {
       // without the finite guard it would be a free upgrade. It must be excluded;
       // with no other affordable upgrade, nothing is bought.
       const negInfUpgrade = shopItem("cs", Number.NEGATIVE_INFINITY, "Claw Sharpening");
-      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 1000 }), [hpot, negInfUpgrade]);
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 1000 }), [
+        hpot,
+        negInfUpgrade,
+      ]);
 
       expect(decision).toBeNull();
     });
@@ -712,11 +715,11 @@ describe("applyBuyResult (STRAT-06 / D-12)", () => {
       expect(merged.gameId).toBe("g-buy"); // gameId carried forward from prior
     });
 
-    it("restores the score the api.ts buy() placeholder zeroed (the STRAT-06 subtlety)", () => {
-      // The threaded `score` lives only in the prior state; the BuyResult never
-      // carries it. Merging into a prior state with score 700 must yield 700,
-      // NOT the 0 that api.ts buy() writes for its standalone GameState shape —
-      // otherwise the final reported score would be silently corrupted each buy.
+    it("carries the prior score forward through a buy (the STRAT-06 subtlety)", () => {
+      // The threaded `score` lives only in the prior state; the raw `BuyResult`
+      // `ApiClient.buy()` returns never carries it. Merging into a prior state
+      // with score 700 must yield 700 — otherwise the final reported score would
+      // be silently corrupted each buy (the exact hazard WR-02 closed).
       const merged = applyBuyResult(baseState({ score: 700, highScore: 900 }), baseBuy());
       expect(merged.score).toBe(700);
       expect(merged.highScore).toBe(900);

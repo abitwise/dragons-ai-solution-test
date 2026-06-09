@@ -277,11 +277,13 @@ export function applySolveResult(state: GameState, result: SolveResult): GameSta
  * override ONLY the fields the result carries — so `score`/`highScore` (and
  * `gameId`) are preserved from the prior state.
  *
- * This is the load-bearing half: `api.ts buy()` returns a standalone `GameState`
- * with `score: 0`/`highScore: 0` placeholders (it has no prior state to merge).
- * Consuming the RAW `BuyResult` here means those placeholders are irrelevant —
- * the threaded `score`/`highScore` come from the prior `state`, never the
- * result — so the final reported score is never silently corrupted by a buy.
+ * This is the load-bearing half, and the ONLY score-merge path: `ApiClient.buy()`
+ * (the injected seam, implemented by `HttpApiClient.buy()` in `api.ts`) returns
+ * the RAW `BuyResult` — which carries NO `score`/`highScore` — so the runner
+ * MUST fold it through here. Because the threaded `score`/`highScore` come from
+ * the prior `state` and never from the buy result, the final reported score is
+ * never silently zeroed by a buy. (WR-02: buy() is symmetric with solve() —
+ * `applyBuyResult` is the buy-side mirror of `applySolveResult`.)
  *
  * Pure: spreads into a NEW object and never mutates the prior `state`.
  */
