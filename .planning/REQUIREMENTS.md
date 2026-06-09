@@ -9,10 +9,10 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Game API Integration
 
-- [ ] **API-01**: Bot can start a new game and capture initial state (gameId, lives, gold, level, score, turn)
-- [ ] **API-02**: Bot can fetch the current ads/messages with all fields (adId, message, reward, expiresIn, encrypted, probability)
-- [ ] **API-03**: Bot can solve a chosen ad and read its result (success, lives, gold, score, turn)
-- [ ] **API-04**: Bot can fetch the shop catalog and buy an item by id
+- [x] **API-01**: Bot can start a new game and capture initial state (gameId, lives, gold, level, score, turn)
+- [x] **API-02**: Bot can fetch the current ads/messages with all fields (adId, message, reward, expiresIn, encrypted, probability)
+- [x] **API-03**: Bot can solve a chosen ad and read its result (success, lives, gold, score, turn)
+- [x] **API-04**: Bot can fetch the shop catalog and buy an item by id
 - [ ] **API-05**: Bot decodes encrypted ads (Base64 for `encrypted:1`, ROT13 for `encrypted:2`) across adId, message, and probability
 - [ ] **API-06**: API client is robust to real-world quirks — URL-encodes path segments (adId/itemId), coerces string `reward` to number, tolerates non-JSON (HTML) error bodies, retries transient failures with bounded backoff, and terminates cleanly without crashing
 
@@ -73,10 +73,10 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| API-01 | Phase 1 | Pending |
-| API-02 | Phase 1 | Pending |
-| API-03 | Phase 1 | Pending |
-| API-04 | Phase 1 | Pending |
+| API-01 | Phase 1 | Complete |
+| API-02 | Phase 1 | Complete |
+| API-03 | Phase 1 | Complete |
+| API-04 | Phase 1 | Complete |
 | API-05 | Phase 1 | Pending |
 | API-06 | Phase 1 | Pending |
 | STRAT-01 | Phase 2 | Pending |

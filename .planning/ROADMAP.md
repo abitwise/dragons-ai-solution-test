@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Bootstrap ESM/TS project + shared types & ApiClient/Logger interfaces (the seam)
+- [x] 01-01-PLAN.md — Bootstrap ESM/TS project + shared types & ApiClient/Logger interfaces (the seam)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation — Types, API Client & Test Seam | 0/4 | Not started | - |
+| 1. Foundation — Types, API Client & Test Seam | 1/4 | In Progress|  |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 0/TBD | Not started | - |
 | 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-09T08:20:01.799Z"
-last_activity: 2026-06-09 -- Phase 01 planning complete
+last_updated: "2026-06-09T09:03:01.875Z"
+last_activity: 2026-06-09
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-09)
 
 **Core value:** The bot autonomously plays a full game of Dragons of Mugloar to completion and reports its final score — driven by a simple, correct, well-tested decision loop.
-**Current focus:** Phase 1 — Foundation: Types, API Client & Test Seam
+**Current focus:** Phase 01 — foundation-types-api-client-test-seam
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation — Types, API Client & Test Seam)
-Plan: 0 of TBD in current phase
+Phase: 01 (foundation-types-api-client-test-seam) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-06-09 -- Phase 01 planning complete
+Last activity: 2026-06-09
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01 P01-01 | 5 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Recent decisions affecting current work:
 - Phase 1: Define the injectable `ApiClient` interface first — it is the TDD seam that lets Phases 2-3 be tested offline against a `FakeApiClient`.
 - Phase 1: Encryption decoding (Base64 for `1`, ROT13 for `2`) and `encodeURIComponent` on path segments live in the API client, where raw JSON is first touched.
 - Phase 2: TDD coverage (TEST-01) attaches here, where the bulk of testable logic lands; no separate test-only phase.
+- [Phase ?]: Phase 1: ApiClient interface defined as the injectable TDD seam in types.ts; consumers depend on the interface, never on fetch.
+- [Phase ?]: Phase 1: Pinned TypeScript to ~5.9 (5.9.3); TS 6.0 excluded per CLAUDE.md. Ad.probability is free-text string and Ad.encrypted is optional number (D-02).
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T07:26:20.360Z
+Last session: 2026-06-09T09:02:26.942Z
 Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-foundation-types-api-client-test-seam/01-CONTEXT.md
+Resume file: None
