@@ -241,6 +241,33 @@ describe("filterEligibleAds (STRAT-02)", () => {
     expect(() => filterEligibleAds([])).not.toThrow();
     expect(filterEligibleAds([])).toEqual([]);
   });
+
+  describe("non-finite reward hardening (WR-01)", () => {
+    it("drops an ad whose reward is NaN (failed boundary coercion)", () => {
+      // `Ad.reward` is coerced from a wire string in api.ts; a failed coercion
+      // yields NaN. A NaN EV makes the comparator silently fall through, so the
+      // NaN-reward ad must be excluded at the filter rather than reach selection.
+      const ad = baseAd({ reward: Number.NaN });
+      expect(filterEligibleAds([ad])).toEqual([]);
+    });
+
+    it("drops an ad whose reward is +Infinity", () => {
+      const ad = baseAd({ reward: Number.POSITIVE_INFINITY });
+      expect(filterEligibleAds([ad])).toEqual([]);
+    });
+
+    it("drops an ad whose reward is -Infinity", () => {
+      const ad = baseAd({ reward: Number.NEGATIVE_INFINITY });
+      expect(filterEligibleAds([ad])).toEqual([]);
+    });
+
+    it("KEEPS an ad with a finite NEGATIVE reward (negative is finite — not excluded by the finite guard)", () => {
+      // A finite negative reward is still eligible by the finite guard; it loses
+      // on EV elsewhere but is NOT silently filtered like a non-finite value.
+      const ad = baseAd({ reward: -50 });
+      expect(filterEligibleAds([ad])).toEqual([ad]);
+    });
+  });
 });
 
 describe("chooseAd (STRAT-03)", () => {
@@ -380,6 +407,26 @@ describe("chooseAd (STRAT-03)", () => {
       expect(() => chooseAd([])).not.toThrow();
       expect(() => chooseAd([baseAd({ expiresIn: 0 })])).not.toThrow();
       expect(() => chooseAd([baseAd({ encrypted: 1 })])).not.toThrow();
+    });
+  });
+
+  describe("non-finite reward hardening (WR-01)", () => {
+    it("returns the finite-EV ad over a higher-looking NaN-reward ad", () => {
+      // The NaN-reward ad must never win or fall through: its EV is NaN, which
+      // would silently corrupt the comparator. The finite-EV ad is chosen.
+      const finite = baseAd({ adId: "finite", reward: 100, probability: "Sure thing" }); // EV 1000
+      const nanReward = baseAd({ adId: "nan", reward: Number.NaN, probability: "Sure thing" });
+
+      expect(chooseAd([nanReward, finite])?.adId).toBe("finite");
+    });
+
+    it("excludes a NaN-reward ad from the fallback solvable set (all sub-floor board)", () => {
+      // No ad clears the floor; in the relaxed fallback a NaN-reward ad must
+      // still be excluded so it is never chosen as the least-bad gamble.
+      const nanGamble = baseAd({ adId: "nan-gamble", reward: Number.NaN, probability: "Gamble" });
+      const decodedGamble = baseAd({ adId: "dec-gamble", reward: 100, probability: "Gamble" });
+
+      expect(chooseAd([nanGamble, decodedGamble])?.adId).toBe("dec-gamble");
     });
   });
 
