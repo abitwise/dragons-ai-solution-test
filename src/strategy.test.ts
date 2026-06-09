@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rankProbability } from "./strategy.js";
+import { filterEligibleAds, rankProbability } from "./strategy.js";
 import type { Ad } from "./types.js";
 
 /**
@@ -75,5 +75,91 @@ describe("rankProbability", () => {
       expect(() => rankProbability("")).not.toThrow();
       expect(() => rankProbability("Hmmm...")).not.toThrow();
     });
+  });
+});
+
+describe("filterEligibleAds (STRAT-02)", () => {
+  it("keeps a 'Sure thing', non-expired, plaintext ad", () => {
+    const ad = baseAd();
+    expect(filterEligibleAds([ad])).toEqual([ad]);
+  });
+
+  it("keeps a 'Hmmm....' ad — the exact floor (rank 6) is eligible (D-02)", () => {
+    const ad = baseAd({ probability: "Hmmm...." });
+    expect(filterEligibleAds([ad])).toEqual([ad]);
+  });
+
+  it("drops a 'Gamble' (rank 5) ad — just below the floor (D-02)", () => {
+    const ad = baseAd({ probability: "Gamble" });
+    expect(filterEligibleAds([ad])).toEqual([]);
+  });
+
+  it("drops a 'Risky' (rank 4) ad (D-02)", () => {
+    const ad = baseAd({ probability: "Risky" });
+    expect(filterEligibleAds([ad])).toEqual([]);
+  });
+
+  it("drops an unknown-label (rank 0) ad (D-01/D-02)", () => {
+    const ad = baseAd({ probability: "some new label" });
+    expect(filterEligibleAds([ad])).toEqual([]);
+  });
+
+  it("drops an expired ad (expiresIn: 0) even when safe (D-03)", () => {
+    const ad = baseAd({ expiresIn: 0 });
+    expect(filterEligibleAds([ad])).toEqual([]);
+  });
+
+  it("drops a negative-expiry ad (expiresIn: -1) (D-03)", () => {
+    const ad = baseAd({ expiresIn: -1 });
+    expect(filterEligibleAds([ad])).toEqual([]);
+  });
+
+  it("drops a still-encrypted ad (encrypted: 1) the client could not decode (D-03/D-09)", () => {
+    const ad = baseAd({ encrypted: 1 });
+    expect(filterEligibleAds([ad])).toEqual([]);
+  });
+
+  it("drops a still-encrypted ad (encrypted: 2) (D-03/D-09)", () => {
+    const ad = baseAd({ encrypted: 2 });
+    expect(filterEligibleAds([ad])).toEqual([]);
+  });
+
+  it("keeps a decoded ad whose flag was cleared to 0 (decode.ts pass-through)", () => {
+    const ad = baseAd({ encrypted: 0 });
+    expect(filterEligibleAds([ad])).toEqual([ad]);
+  });
+
+  it("keeps eligible ads and drops ineligible ones from a mixed board", () => {
+    const keepSure = baseAd({ adId: "keep-sure", probability: "Sure thing" });
+    const keepFloor = baseAd({ adId: "keep-floor", probability: "Hmmm...." });
+    const dropGamble = baseAd({ adId: "drop-gamble", probability: "Gamble" });
+    const dropExpired = baseAd({ adId: "drop-expired", expiresIn: 0 });
+    const dropEncrypted = baseAd({ adId: "drop-enc", encrypted: 1 });
+
+    const result = filterEligibleAds([keepSure, dropGamble, keepFloor, dropExpired, dropEncrypted]);
+
+    expect(result).toEqual([keepSure, keepFloor]);
+  });
+
+  it("does not mutate the input array or its ad objects", () => {
+    const ads = [
+      baseAd({ adId: "a", probability: "Sure thing" }),
+      baseAd({ adId: "b", probability: "Gamble" }),
+    ];
+    const snapshot = ads.map((ad) => ({ ...ad }));
+
+    filterEligibleAds(ads);
+
+    expect(ads).toEqual(snapshot);
+  });
+
+  it("returns a new array, not the input reference", () => {
+    const ads = [baseAd()];
+    expect(filterEligibleAds(ads)).not.toBe(ads);
+  });
+
+  it("never throws on an empty board", () => {
+    expect(() => filterEligibleAds([])).not.toThrow();
+    expect(filterEligibleAds([])).toEqual([]);
   });
 });
