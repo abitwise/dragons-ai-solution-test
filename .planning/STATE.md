@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-09T13:25:09.662Z"
+last_updated: "2026-06-09T13:30:32.384Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
   percent: 25
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 ## Current Position
 
 Phase: 02 (strategy-core-pure-decision-logic-tdd) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-06-09
 
-Progress: [██████░░░░] 63%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [██████░░░░] 63%
 | Phase 01 P01-03 | 15 | 2 tasks | 2 files |
 | Phase 01 P01-04 | 4 | 3 tasks | 2 files |
 | Phase 02 P01 | 3 | 2 tasks | 2 files |
+| Phase 02 P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 2 (02-01): strategy.ts is pure functional core — imports ONLY types.js via import type (no fetch/zod/pino/ApiClient); rankProbability and filterEligibleAds never throw
 - [Phase ?]: Phase 2 (02-01): rank via exact-string Record lookup with ?? 0 (unknown->worst); integer ranks 0-10 from FEATURES.md are the EV weighting (D-01), not percentages; PROBABILITY_FLOOR_RANK = 6
 - [Phase ?]: Phase 2 (02-01): eligibility filter drops expired/sub-floor/still-encrypted ads in one place, returns a new array; !ad.encrypted means undecodable per decode.ts clearing flag to 0 (D-02/D-03/D-09)
+- [Phase ?]: Phase 2 (02-02): chooseAd returns Ad | null (null = no-ad signal the runner branches on); selection via one comparator preferAd folded by reduce (bestOf): EV desc -> expiresIn asc -> reward desc (D-04/D-05/D-07)
+- [Phase ?]: Phase 2 (02-02): least-bad-gamble fallback relaxes ONLY the floor (ads.filter expiresIn>0 && !encrypted); never selects an expired or still-encrypted ad that would 400 (D-06/PITFALLS #2); reuses Plan 01 filterEligibleAds+rankProbability verbatim, no rank-table duplication
 
 ### Pending Todos
 
@@ -102,6 +105,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T13:24:59.666Z
+Last session: 2026-06-09T13:30:17.966Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
