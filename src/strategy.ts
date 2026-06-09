@@ -27,12 +27,14 @@
  *     floor, still excluding expired/still-encrypted ads) when none clear the
  *     floor; returns `null` only for a truly empty/no-solvable board. Never
  *     throws, never mutates its input, never selects a still-encrypted ad.
- *   - chooseShopPurchase (STRAT-04 / STRAT-05 / D-08..D-11): heals (buys `hpot`,
- *     looked up by id with its LIVE cost) when `lives < MAX_LIVES_TO_KEEP` and
- *     gold allows; otherwise — only when lives are healthy — buys the priciest
- *     affordable non-`hpot` upgrade while reserving HEAL_BUFFER_GOLD. Costs are
- *     read live from the passed-in shop list (never hardcoded); returns `null`
- *     when nothing should be bought. Never throws, never mutates its inputs.
+ *   - chooseShopPurchase (STRAT-04 / STRAT-05 / D-08..D-11 / WR-03): heals (buys
+ *     `hpot`, looked up by id with its LIVE cost) when `lives < MAX_LIVES_TO_KEEP`
+ *     and gold allows; otherwise — only when lives are healthy — buys the
+ *     priciest affordable non-`hpot` upgrade while reserving HEAL_BUFFER_GOLD.
+ *     Costs are read live from the passed-in shop list (never hardcoded), and a
+ *     non-finite cost is treated as unaffordable (heal does not fire / upgrade
+ *     excluded); returns `null` when nothing should be bought. Never throws,
+ *     never mutates its inputs.
  *   - applySolveResult / applyBuyResult (STRAT-06 / D-12): fold a `SolveResult` /
  *     `BuyResult` into the prior `GameState` WITHOUT clobbering the field the
  *     response omits — a solve carries `level` forward (it has none), a buy
@@ -208,15 +210,22 @@ export function chooseAd(ads: Ad[]): Ad | null {
  * return the priciest (highest live `cost`) — a bigger level jump per turn is
  * more turn-efficient. If none qualify, return `null`.
  *
+ * Non-finite cost (WR-03): `ShopItem.cost` flows from the same wire-string
+ * boundary as `Ad.reward`, so a failed coercion can yield `NaN`/`±Infinity`. A
+ * non-finite cost is treated as UNAFFORDABLE in both branches — the heal does
+ * not fire (degrade to `null`) and the upgrade is excluded — guarded with
+ * `Number.isFinite(item.cost)` so even a `-Infinity` cost is never a free buy.
+ *
  * Pure: reads `state` and `shop`, never mutates either or their items, and
- * never throws — a missing `hpot` or an empty shop simply degrades to `null`.
+ * never throws — a missing `hpot`, an empty shop, or a non-finite cost simply
+ * degrades to `null` / exclusion.
  */
 export function chooseShopPurchase(state: GameState, shop: ShopItem[]): ShopItem | null {
   if (state.lives < MAX_LIVES_TO_KEEP) {
     // Heal takes priority; the upgrade branch is gated on healthy lives, so an
     // unhealthy-but-unaffordable state stops here rather than buying an upgrade.
     const healingPotion = shop.find((item) => item.id === "hpot");
-    if (healingPotion && healingPotion.cost <= state.gold) {
+    if (healingPotion && Number.isFinite(healingPotion.cost) && healingPotion.cost <= state.gold) {
       return healingPotion;
     }
     return null;
@@ -224,7 +233,10 @@ export function chooseShopPurchase(state: GameState, shop: ShopItem[]): ShopItem
 
   // Lives are healthy: consider an upgrade, reserving the healing buffer.
   const affordableUpgrades = shop.filter(
-    (item) => item.id !== "hpot" && item.cost <= state.gold - HEAL_BUFFER_GOLD,
+    (item) =>
+      item.id !== "hpot" &&
+      Number.isFinite(item.cost) &&
+      item.cost <= state.gold - HEAL_BUFFER_GOLD,
   );
   if (affordableUpgrades.length === 0) {
     return null;
