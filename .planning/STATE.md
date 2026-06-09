@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-09T13:35:35.250Z"
+status: verifying
+last_updated: "2026-06-09T13:41:40.277Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 25
+  completed_plans: 8
+  percent: 50
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 
 Phase: 02 (strategy-core-pure-decision-logic-tdd) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-09
 
-Progress: [█████████░] 88%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [█████████░] 88%
 | Phase 02 P01 | 3 | 2 tasks | 2 files |
 | Phase 02 P02 | 2min | 2 tasks | 2 files |
 | Phase 02 P03 | 2min | 2 tasks | 2 files |
+| Phase 02 P04 | 3min | 2 tasks tasks | 2 files files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 2 (02-02): least-bad-gamble fallback relaxes ONLY the floor (ads.filter expiresIn>0 && !encrypted); never selects an expired or still-encrypted ad that would 400 (D-06/PITFALLS #2); reuses Plan 01 filterEligibleAds+rankProbability verbatim, no rank-table duplication
 - [Phase ?]: Phase 2 (02-03): chooseShopPurchase(state, shop) is one function (heal-or-upgrade-or-none); heal branch returns early when lives below MAX_LIVES_TO_KEEP=3, gating the upgrade branch on healthy lives not on heal-not-bought (D-08/D-09)
 - [Phase ?]: Phase 2 (02-03): upgrade reserves HEAL_BUFFER_GOLD=100 (cost <= gold - 100) and picks the priciest affordable non-hpot via reduce (D-10/D-11); all costs read LIVE from the shop (no hardcoded 50/100/300), proven by a 70-cost-hpot test that does not heal at gold 60
+- [Phase 02]: Phase 2 (02-04): two pure merge helpers applySolveResult/applyBuyResult complete the decision core (D-12) — spread the prior state first then override only result-provided fields, so a solve carries level forward and a buy carries score/highScore forward
+- [Phase 02]: Phase 2 (02-04): applyBuyResult consumes the RAW BuyResult (not api.ts's partial GameState), so the api.ts score:0/highScore:0 placeholder can never reach the threaded final score; strategy.ts is now feature-complete (STRAT-01..06), still types-only import
 
 ### Pending Todos
 
@@ -108,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T13:35:19.343Z
+Last session: 2026-06-09T13:40:30.352Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
