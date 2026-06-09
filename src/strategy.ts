@@ -104,12 +104,23 @@ export function rankProbability(probability: string): number {
  */
 export function filterEligibleAds(ads: Ad[]): Ad[] {
   return ads.filter(
-    (ad) =>
-      ad.expiresIn > 0 &&
-      rankProbability(ad.probability) >= PROBABILITY_FLOOR_RANK &&
-      !ad.encrypted &&
-      Number.isFinite(ad.reward),
+    (ad) => isAttemptable(ad) && rankProbability(ad.probability) >= PROBABILITY_FLOOR_RANK,
   );
+}
+
+/**
+ * Is an ad even attempt-worthy regardless of the probability floor? An ad is
+ * attemptable when it is non-expired (`expiresIn > 0`), NOT still-encrypted
+ * (`!encrypted` — a still-encrypted ad would 400 on `/solve`), and carries a
+ * FINITE `reward` (`NaN`/`±Infinity` would corrupt EV selection — WR-01).
+ *
+ * This is the set of constraints shared by BOTH the primary `filterEligibleAds`
+ * predicate and the `chooseAd` fallback `solvable` filter, so the floor is
+ * provably the ONLY constraint the fallback relaxes (IN-04 / D-06) — keeping the
+ * two paths in lock-step if any shared constraint ever changes.
+ */
+function isAttemptable(ad: Ad): boolean {
+  return ad.expiresIn > 0 && !ad.encrypted && Number.isFinite(ad.reward);
 }
 
 /** Expected value of attempting an ad: `reward × rank` (D-04) — the selection metric. */
@@ -171,11 +182,10 @@ export function chooseAd(ads: Ad[]): Ad | null {
     return bestOf(eligible);
   }
 
-  // Fallback: relax ONLY the floor; still exclude expired, still-encrypted, and
-  // non-finite-reward ads (lock-step with filterEligibleAds, WR-01).
-  const solvable = ads.filter(
-    (ad) => ad.expiresIn > 0 && !ad.encrypted && Number.isFinite(ad.reward),
-  );
+  // Fallback: relax ONLY the floor. `isAttemptable` is the SAME shared predicate
+  // filterEligibleAds uses (non-expired, not-encrypted, finite reward), so the
+  // floor is provably the only relaxed constraint (IN-04 / WR-01 lock-step).
+  const solvable = ads.filter(isAttemptable);
   return bestOf(solvable);
 }
 
