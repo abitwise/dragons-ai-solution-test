@@ -66,7 +66,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Probability ranking + ad eligibility filter (TDD, STRAT-01/02): exact-string rank table, unknown→worst, drop expired/sub-floor/still-encrypted
+- [x] 02-01-PLAN.md — Probability ranking + ad eligibility filter (TDD, STRAT-01/02): exact-string rank table, unknown→worst, drop expired/sub-floor/still-encrypted
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -116,6 +116,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
-| 2. Strategy Core — Pure Decision Logic (TDD) | 0/4 | Not started | - |
+| 2. Strategy Core — Pure Decision Logic (TDD) | 1/4 | In Progress|  |
 | 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |

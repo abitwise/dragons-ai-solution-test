@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-09T13:15:34.872Z"
-last_activity: 2026-06-09 -- Phase 02 planning complete
+last_updated: "2026-06-09T13:25:09.662Z"
+last_activity: 2026-06-09
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 8
-  completed_plans: 4
+  completed_plans: 5
   percent: 25
 ---
 
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-09)
 
 **Core value:** The bot autonomously plays a full game of Dragons of Mugloar to completion and reports its final score — driven by a simple, correct, well-tested decision loop.
-**Current focus:** Phase 2 — strategy core — pure decision logic (tdd)
+**Current focus:** Phase 02 — strategy-core-pure-decision-logic-tdd
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (strategy-core-pure-decision-logic-tdd) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-06-09 -- Phase 02 planning complete
+Last activity: 2026-06-09
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [██████████] 100%
 | Phase 01 P01-02 | 2 | 3 tasks | 2 files |
 | Phase 01 P01-03 | 15 | 2 tasks | 2 files |
 | Phase 01 P01-04 | 4 | 3 tasks | 2 files |
+| Phase 02 P01 | 3 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Phase 1 (01-04): HttpApiClient is the only fetch caller; single request<T> helper centralizes URL build/encode, AbortSignal timeout, retry, parse+validate
 - [Phase 01]: Phase 1 (01-04): error taxonomy TransportError (retryable 5xx/network) vs BoundaryError (terminal non-2xx/parse/ZodError); reads retry ~3x bounded backoff, solve/buy never retry (D-04/D-05/D-06)
 - [Phase 01]: Phase 1 (01-04): base URL non-www default + MUGLOAR_BASE_URL read once at construction (T-01-08); encodeURIComponent every path segment (PITFALLS #2); getMessages decodes via decodeAd after zod (D-03); success is a body field not HTTP status (PITFALLS #5)
+- [Phase ?]: Phase 2 (02-01): strategy.ts is pure functional core — imports ONLY types.js via import type (no fetch/zod/pino/ApiClient); rankProbability and filterEligibleAds never throw
+- [Phase ?]: Phase 2 (02-01): rank via exact-string Record lookup with ?? 0 (unknown->worst); integer ranks 0-10 from FEATURES.md are the EV weighting (D-01), not percentages; PROBABILITY_FLOOR_RANK = 6
+- [Phase ?]: Phase 2 (02-01): eligibility filter drops expired/sub-floor/still-encrypted ads in one place, returns a new array; !ad.encrypted means undecodable per decode.ts clearing flag to 0 (D-02/D-03/D-09)
 
 ### Pending Todos
 
@@ -98,6 +102,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T12:55:55.903Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-strategy-core-pure-decision-logic-tdd/02-CONTEXT.md
+Last session: 2026-06-09T13:24:59.666Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

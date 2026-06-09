@@ -18,8 +18,8 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Decision Strategy
 
-- [ ] **STRAT-01**: Bot maps each probability string to a rank via exact-string lookup; an unknown string ranks worst and never throws
-- [ ] **STRAT-02**: Bot filters out ineligible ads (expired `expiresIn <= 0`, below the probability floor, or unhandled encryption)
+- [x] **STRAT-01**: Bot maps each probability string to a rank via exact-string lookup; an unknown string ranks worst and never throws
+- [x] **STRAT-02**: Bot filters out ineligible ads (expired `expiresIn <= 0`, below the probability floor, or unhandled encryption)
 - [ ] **STRAT-03**: Bot selects the best ad by expected value (reward × success rank) with an expiry-aware tiebreak
 - [ ] **STRAT-04**: Bot buys a healing potion (`hpot`) when lives are low and gold allows
 - [ ] **STRAT-05**: Bot buys level-raising upgrades from surplus gold only after reserving a healing buffer
@@ -38,7 +38,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Testing (TDD)
 
-- [ ] **TEST-01**: Core logic (strategy, state updates, and loop) is built test-first and covered by fast, deterministic unit tests against a mocked/faked API client — no live network in the suite
+- [x] **TEST-01**: Core logic (strategy, state updates, and loop) is built test-first and covered by fast, deterministic unit tests against a mocked/faked API client — no live network in the suite
 
 ## v2 Requirements
 
@@ -79,8 +79,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | API-04 | Phase 1 | Complete |
 | API-05 | Phase 1 | Complete |
 | API-06 | Phase 1 | Complete |
-| STRAT-01 | Phase 2 | Pending |
-| STRAT-02 | Phase 2 | Pending |
+| STRAT-01 | Phase 2 | Complete |
+| STRAT-02 | Phase 2 | Complete |
 | STRAT-03 | Phase 2 | Pending |
 | STRAT-04 | Phase 2 | Pending |
 | STRAT-05 | Phase 2 | Pending |
@@ -90,7 +90,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LOOP-03 | Phase 3 | Pending |
 | LOG-01 | Phase 4 | Pending |
 | LOG-02 | Phase 4 | Pending |
-| TEST-01 | Phase 2 | Pending |
+| TEST-01 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 18 total
