@@ -61,6 +61,5 @@
   "features": {},
   "mode": "interactive",
   "depth": "quick",
-  "branching_strategy": "none",
   "granularity": "coarse"
 }
