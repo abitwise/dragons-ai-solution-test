@@ -29,10 +29,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. An encrypted ad (`encrypted:1` Base64 or `encrypted:2` ROT13) is decoded across `adId`, `message`, and `probability` before it reaches any caller, and a `/`-containing `adId` is URL-encoded so `/solve` does not 400
   4. A transient failure is retried with bounded backoff and a non-JSON (HTML) error body is handled without throwing an unhandled crash; a string `reward` is coerced to a number at the client boundary
   5. The test suite runs and passes with zero live network calls
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
 
 Plans:
-- [ ] TBD
+- [ ] 01-01-PLAN.md — Bootstrap ESM/TS project + shared types & ApiClient/Logger interfaces (the seam)
+- [ ] 01-02-PLAN.md — decodeAd (TDD): cross-field Base64/ROT13 decode, all-three-fields-or-none
+- [ ] 01-03-PLAN.md — FakeApiClient: scripted offline test double implementing ApiClient
+- [ ] 01-04-PLAN.md — HttpApiClient (TDD): zod boundary, retry-at-edge, encodeURIComponent, decode integration
 
 ### Phase 2: Strategy Core — Pure Decision Logic (TDD)
 **Goal**: All "what should the bot do" logic exists as pure, fully test-driven functions in `strategy.ts`, so decisions are deterministic, readable, and proven before any loop integrates them.
@@ -78,7 +81,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation — Types, API Client & Test Seam | 0/TBD | Not started | - |
+| 1. Foundation — Types, API Client & Test Seam | 0/4 | Not started | - |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 0/TBD | Not started | - |
 | 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |
