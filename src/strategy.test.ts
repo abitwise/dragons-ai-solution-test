@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { chooseAd, filterEligibleAds, rankProbability } from "./strategy.js";
-import type { Ad } from "./types.js";
+import { chooseAd, chooseShopPurchase, filterEligibleAds, rankProbability } from "./strategy.js";
+import type { Ad, GameState, ShopItem } from "./types.js";
 
 /**
- * Pure-function suite for the strategy core (Plans 02-01, 02-02).
+ * Pure-function suite for the strategy core (Plans 02-01, 02-02, 02-03).
  *
  * Proves the responsibilities of `strategy.ts`:
  *   - `rankProbability` (STRAT-01 / D-01): every one of the 11 verified labels
@@ -17,6 +17,11 @@ import type { Ad } from "./types.js";
  *     reward, falls back to a least-bad gamble when none clear the floor, and
  *     returns `null` only for a truly empty/no-solvable board — never throwing,
  *     never selecting a still-encrypted ad, never mutating its input.
+ *   - `chooseShopPurchase` (STRAT-04 / STRAT-05 / D-08..D-11): heals (buys
+ *     `hpot`, looked up by id with its LIVE cost) when `lives < 3` and gold
+ *     allows; otherwise — only when lives are healthy — buys the priciest
+ *     affordable non-`hpot` upgrade while reserving a 100-gold healing buffer;
+ *     returns `null` when nothing should be bought; never throws, never mutates.
  *
  * All fixtures are plain objects — no mocks, no FakeApiClient, no network
  * (TEST-01). The unit under test is `strategy.ts`, which imports only types.
@@ -32,6 +37,25 @@ function baseAd(overrides: Partial<Ad> = {}): Ad {
     probability: "Sure thing",
     ...overrides,
   };
+}
+
+/** A complete, neutral `GameState` we spread-merge per shop-decision case. */
+function baseState(overrides: Partial<GameState> = {}): GameState {
+  return {
+    gameId: "g1",
+    lives: 3,
+    gold: 0,
+    level: 0,
+    score: 0,
+    highScore: 0,
+    turn: 0,
+    ...overrides,
+  };
+}
+
+/** A single shop catalog item; cost is what the decision must read LIVE (never a hardcoded literal). */
+function shopItem(id: string, cost: number, name = id): ShopItem {
+  return { id, name, cost };
 }
 
 describe("rankProbability", () => {
@@ -321,6 +345,134 @@ describe("chooseAd (STRAT-03)", () => {
       chooseAd(board);
 
       expect(board).toEqual(snapshot);
+    });
+  });
+});
+
+describe("chooseShopPurchase (STRAT-04 / STRAT-05)", () => {
+  // The live shop catalog tiers from FEATURES.md: hpot=50, 100-gold and 300-gold
+  // upgrades. These costs are FIXTURE values; the decision must read them LIVE
+  // from the passed-in list, never hardcode them (REQUIREMENTS Out of Scope).
+  const hpot = shopItem("hpot", 50, "Healing potion");
+  const cs = shopItem("cs", 100, "Claw Sharpening");
+  const ch = shopItem("ch", 300, "Claw Honing");
+
+  describe("heal policy (D-08)", () => {
+    it("buys hpot when lives < 3 and gold >= the live hpot cost", () => {
+      // lives 2 (< MAX_LIVES_TO_KEEP=3), gold 60 >= hpot cost 50 -> heal.
+      const decision = chooseShopPurchase(baseState({ lives: 2, gold: 60 }), [hpot, cs, ch]);
+      expect(decision?.id).toBe("hpot");
+    });
+
+    it("buys hpot at the exact affordable boundary (gold === live hpot cost)", () => {
+      const decision = chooseShopPurchase(baseState({ lives: 1, gold: 50 }), [hpot, cs]);
+      expect(decision?.id).toBe("hpot");
+    });
+
+    it("heals at lives 2 even with a large surplus (heal takes priority over upgrade)", () => {
+      // Low lives + plenty of gold for `ch`(300): heal still wins (D-09 ordering).
+      const decision = chooseShopPurchase(baseState({ lives: 2, gold: 500 }), [hpot, cs, ch]);
+      expect(decision?.id).toBe("hpot");
+    });
+
+    it("reads the hpot cost LIVE: a 70-cost hpot does NOT fire heal at gold 60", () => {
+      // CRITICAL live-cost proof: gold 60 is between the documented 50 and the
+      // passed-in 70. A hardcoded-50 decision would (wrongly) heal; reading the
+      // live cost (70) means heal cannot afford it. Lives are unhealthy (2), so
+      // the upgrade branch must NOT fire either -> nothing bought.
+      const pricierHpot = shopItem("hpot", 70, "Healing potion");
+      const decision = chooseShopPurchase(baseState({ lives: 2, gold: 60 }), [pricierHpot, cs, ch]);
+      expect(decision).toBeNull();
+    });
+
+    it("returns null when heal is needed but the live hpot cost is unaffordable", () => {
+      // lives 1 (unhealthy), gold 30 < hpot cost 50 -> heal cannot fire; upgrade
+      // is gated on healthy lives (D-09), which fails here -> nothing bought.
+      const decision = chooseShopPurchase(baseState({ lives: 1, gold: 30 }), [hpot, cs, ch]);
+      expect(decision).toBeNull();
+    });
+
+    it("returns null when no hpot exists in the shop and lives are low", () => {
+      // Robustness (T-02-05): a shop with no `hpot` cannot heal; lives unhealthy
+      // gates the upgrade branch off -> null, never throws.
+      const decision = chooseShopPurchase(baseState({ lives: 1, gold: 500 }), [cs, ch]);
+      expect(decision).toBeNull();
+    });
+  });
+
+  describe("decision ordering heal > upgrade (D-09)", () => {
+    it("considers an upgrade only when lives are healthy (heal condition not met)", () => {
+      // lives 3 (full) -> heal does not fire; upgrade path runs and buys an item.
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 500 }), [hpot, cs, ch]);
+      expect(decision).not.toBeNull();
+      expect(decision?.id).not.toBe("hpot");
+    });
+
+    it("does NOT buy an upgrade when lives are low even with ample gold", () => {
+      // lives 1 (unhealthy) but hpot unaffordable (gold 30 < 50): the upgrade
+      // branch is gated on healthy lives, not merely on heal-not-purchased ->
+      // null, NOT an upgrade bought with the survival reserve.
+      const decision = chooseShopPurchase(baseState({ lives: 1, gold: 30 }), [hpot, cs, ch]);
+      expect(decision).toBeNull();
+    });
+  });
+
+  describe("upgrade buffer reserved (D-10)", () => {
+    it("buys cs(100) when gold 200 leaves exactly the 100-gold buffer", () => {
+      // 200 - 100 = 100 >= HEAL_BUFFER_GOLD (allowed); ch(300) is unaffordable.
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 200 }), [hpot, cs, ch]);
+      expect(decision?.id).toBe("cs");
+    });
+
+    it("returns null when buying the cheapest upgrade would breach the buffer", () => {
+      // gold 150: buying cs(100) leaves 50 (< 100 buffer) -> NO upgrade allowed.
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 150 }), [hpot, cs, ch]);
+      expect(decision).toBeNull();
+    });
+  });
+
+  describe("priciest affordable non-hpot (D-11)", () => {
+    it("buys the priciest affordable upgrade (ch over cs) when surplus allows", () => {
+      // gold 500: ch(300) leaves 200 (>= 100 buffer) and is priciest affordable.
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 500 }), [hpot, cs, ch]);
+      expect(decision?.id).toBe("ch");
+    });
+
+    it("never selects hpot as an upgrade even when healthy and flush with gold", () => {
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 1000 }), [hpot, cs, ch]);
+      expect(decision?.id).not.toBe("hpot");
+      expect(decision?.id).toBe("ch");
+    });
+  });
+
+  describe("nothing to buy", () => {
+    it("returns null at full lives with zero gold", () => {
+      expect(chooseShopPurchase(baseState({ lives: 3, gold: 0 }), [hpot, cs, ch])).toBeNull();
+    });
+
+    it("returns null when the only upgrade is unaffordable past the buffer (heal not needed)", () => {
+      // lives 3 (no heal), gold 80: cs(100) > 80, so no upgrade clears even before
+      // the buffer; hpot is never bought as an upgrade -> null.
+      expect(chooseShopPurchase(baseState({ lives: 3, gold: 80 }), [hpot, cs])).toBeNull();
+    });
+
+    it("returns null on an empty shop list (never throws)", () => {
+      expect(() => chooseShopPurchase(baseState({ lives: 1, gold: 500 }), [])).not.toThrow();
+      expect(chooseShopPurchase(baseState({ lives: 1, gold: 500 }), [])).toBeNull();
+    });
+  });
+
+  describe("purity (D-08..D-11)", () => {
+    it("does not throw and does not mutate the state or the shop list", () => {
+      const state = baseState({ lives: 3, gold: 500 });
+      const shop = [hpot, cs, ch];
+      const stateSnapshot = { ...state };
+      const shopSnapshot = shop.map((item) => ({ ...item }));
+
+      expect(() => chooseShopPurchase(state, shop)).not.toThrow();
+
+      expect(state).toEqual(stateSnapshot);
+      expect(shop).toEqual(shopSnapshot);
     });
   });
 });
