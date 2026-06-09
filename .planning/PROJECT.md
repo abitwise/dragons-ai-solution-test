@@ -25,6 +25,16 @@ away, this loop must work.
   live `HttpApiClient` (zod boundary, bounded retry, `encodeURIComponent`, HTML-error tolerance)
   all exist and are TDD-covered with zero live-network tests (API-01..API-06). The end-to-end
   capability requirements below validate once the strategy + runner phases wire this layer through.
+- **Strategy core / pure decision logic (Phase 2, 2026-06-09):** the entire "what should the bot
+  do" layer lives in `strategy.ts` as pure, types-only functions, fully TDD-driven (STRAT-01..06,
+  TEST-01; 116 offline tests): probability-string ranking (exact-string table, unknown→worst,
+  never throws), ad eligibility filtering + expected-value ad selection (`chooseAd` with
+  expiry-aware tiebreak and a least-bad-gamble fallback, lock-step non-finite-reward guards), the
+  shop heal/upgrade decision (live costs, healing-buffer reserve, non-finite-cost guards), and the
+  `applySolveResult`/`applyBuyResult` state-merge helpers. The `ApiClient.buy()` seam returns a raw
+  `BuyResult` symmetric with `solve()`, so `applyBuyResult` is reachable end-to-end and the final
+  score is protected. These functions are proven in isolation; the end-to-end capability
+  requirements below validate once Phase 3 wires them into the runner loop.
 
 ### Active
 
@@ -77,7 +87,7 @@ away, this loop must work.
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | TypeScript + Node CLI | Required by brief; natural fit for an API-driven bot | — Pending |
-| Readable heuristic strategy (best reward among high-probability ads) | "Keep it simple" — good-enough play without optimizer complexity | — Pending |
+| Readable heuristic strategy (best reward among high-probability ads) | "Keep it simple" — good-enough play without optimizer complexity | ✅ Built in Phase 2 — `chooseAd` ranks by expected value (`reward × rank`) with an expiry-aware tiebreak and a least-bad-gamble fallback; all pure and TDD-covered |
 | Play a single game to game-over per CLI run | Simplest useful, demonstrable behavior | — Pending |
 | Mock the API in unit tests | Fast, deterministic TDD without network flakiness | — Pending |
 | Human-readable, leveled logging | Makes the bot's decisions easy to follow and review | — Pending |
@@ -100,4 +110,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-08 after initialization*
+*Last updated: 2026-06-09 after Phase 2 (strategy core) completion*
