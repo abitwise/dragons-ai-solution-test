@@ -27,7 +27,7 @@
 
 import { z } from "zod";
 import { decodeAd } from "./decode.js";
-import type { Ad, ApiClient, GameState, ShopItem, SolveResult } from "./types.js";
+import type { Ad, ApiClient, BuyResult, GameState, ShopItem, SolveResult } from "./types.js";
 
 /** The non-www host — `www.` returned nginx 404s in live testing (locked carry-forward). */
 const DEFAULT_BASE_URL = "https://dragonsofmugloar.com/api/v2";
@@ -206,22 +206,13 @@ export class HttpApiClient implements ApiClient {
     return this.request("GET", path, shopSchema, { retry: true });
   }
 
-  async buy(gameId: string, itemId: string): Promise<GameState> {
+  async buy(gameId: string, itemId: string): Promise<BuyResult> {
     // POST /buy is turn-consuming and non-idempotent → NEVER auto-retried (D-05).
+    // Return the RAW validated BuyResult (symmetric with solve() → SolveResult).
+    // The runner folds it into the threaded GameState via applyBuyResult, which
+    // carries the prior score/highScore forward — buy() never invents a score.
     const path = `/${seg(gameId)}/shop/buy/${seg(itemId)}`;
-    const result = await this.request("POST", path, buySchema, { retry: false });
-    // Fold the buy result (level/gold/lives/turn — NO score) into a GameState.
-    // score/highScore are not returned by buy, so they are merged elsewhere
-    // (applyResult, Phase 2); here they default to 0 for the standalone shape.
-    return {
-      gameId,
-      lives: result.lives,
-      gold: result.gold,
-      level: result.level,
-      score: 0,
-      highScore: 0,
-      turn: result.turn,
-    };
+    return this.request("POST", path, buySchema, { retry: false });
   }
 
   /**

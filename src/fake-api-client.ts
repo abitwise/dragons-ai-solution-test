@@ -24,7 +24,7 @@
  * test infrastructure and is never wired by the production composition root.
  */
 
-import type { Ad, ApiClient, GameState, ShopItem, SolveResult } from "./types.js";
+import type { Ad, ApiClient, BuyResult, GameState, ShopItem, SolveResult } from "./types.js";
 
 /**
  * A scripted source for one method: either a FIFO queue of pre-built values, or
@@ -42,7 +42,7 @@ export interface FakeApiScript {
   getMessages?: Source<[gameId: string], Ad[]>;
   solve?: Source<[gameId: string, adId: string], SolveResult>;
   getShop?: Source<[gameId: string], ShopItem[]>;
-  buy?: Source<[gameId: string, itemId: string], GameState>;
+  buy?: Source<[gameId: string, itemId: string], BuyResult>;
 }
 
 /** A single recorded call — so a test can assert e.g. `solve` got the right adId. */
@@ -81,7 +81,7 @@ export class FakeApiClient implements ApiClient {
     return this.next("getShop", [gameId]);
   }
 
-  async buy(gameId: string, itemId: string): Promise<GameState> {
+  async buy(gameId: string, itemId: string): Promise<BuyResult> {
     return this.next("buy", [gameId, itemId]);
   }
 
@@ -126,5 +126,5 @@ type SourceReturn<K extends keyof FakeApiScript> = K extends "startGame"
       : K extends "getShop"
         ? ShopItem[]
         : K extends "buy"
-          ? GameState
+          ? BuyResult
           : never;

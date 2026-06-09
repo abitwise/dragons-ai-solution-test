@@ -83,11 +83,11 @@ export interface SolveResult {
  * The raw wire shape of `POST /{gameId}/shop/buy/{itemId}`.
  *
  * NOTE: a buy result has NO `score`/`highScore` but DOES carry `level` — the
- * mirror image of `SolveResult`. `api.ts` merges this into the threaded
- * `GameState` (the `ApiClient.buy` method returns a merged `GameState`), which
- * is only possible because `level` and `score` can be updated independently.
- * `shoppingSuccess` is `false` when gold is insufficient (state unchanged, no
- * error).
+ * mirror image of `SolveResult`. `ApiClient.buy()` returns this RAW shape; the
+ * caller folds it into the threaded `GameState` via `applyBuyResult` (which
+ * carries the prior `score`/`highScore` forward), mirroring how `solve()`
+ * returns a raw `SolveResult` folded by `applySolveResult`. `shoppingSuccess`
+ * is `false` when gold is insufficient (state unchanged, no error).
  */
 export interface BuyResult {
   shoppingSuccess: boolean;
@@ -110,16 +110,17 @@ export interface GameReport {
  * `HttpApiClient`. Production wires `HttpApiClient` (the only `fetch` caller);
  * tests wire a hand-written `FakeApiClient`. No HTTP-mocking library is used.
  *
- * `buy` returns a merged `GameState` (the client folds the buy result's
- * `level`/`gold`/`lives`/`turn` into the threaded state); all methods return
- * typed models, never raw JSON.
+ * `buy` returns the raw `BuyResult` (`shoppingSuccess`/`gold`/`lives`/`level`/
+ * `turn`); the caller (the Phase-3 runner) folds it into the threaded
+ * `GameState` via `applyBuyResult`, mirroring `solve()` → `applySolveResult`.
+ * All methods return typed models, never raw JSON.
  */
 export interface ApiClient {
   startGame(): Promise<GameState>;
   getMessages(gameId: string): Promise<Ad[]>;
   solve(gameId: string, adId: string): Promise<SolveResult>;
   getShop(gameId: string): Promise<ShopItem[]>;
-  buy(gameId: string, itemId: string): Promise<GameState>;
+  buy(gameId: string, itemId: string): Promise<BuyResult>;
 }
 
 /**
