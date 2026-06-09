@@ -58,4 +58,25 @@ export function rankProbability(probability: string): number {
   return RANK[probability] ?? 0;
 }
 
-// filterEligibleAds (STRAT-02 / D-02 / D-03) lands next, test-first.
+/**
+ * Filter a board of ads down to the ones worth attempting (STRAT-02), in one
+ * place (D-03). Keeps an ad only when ALL hold:
+ *   - it has not expired (`expiresIn > 0`);
+ *   - its probability ranks at or above the floor (`>= PROBABILITY_FLOOR_RANK`),
+ *     dropping `Gamble` (5) and riskier (D-02);
+ *   - it is NOT still-encrypted — a truthy, non-zero `encrypted` flag means the
+ *     API client could not decode it (Phase 1 D-09), so solving it would 400
+ *     (PITFALLS #2). A decoded/plaintext ad has `encrypted` cleared to
+ *     `0`/`undefined` (see `decode.ts`), which is falsy and therefore kept.
+ *
+ * Pure: `Array.filter` returns a NEW array and never mutates the input array or
+ * its ad objects. Never throws.
+ */
+export function filterEligibleAds(ads: Ad[]): Ad[] {
+  return ads.filter(
+    (ad) =>
+      ad.expiresIn > 0 &&
+      rankProbability(ad.probability) >= PROBABILITY_FLOOR_RANK &&
+      !ad.encrypted,
+  );
+}
