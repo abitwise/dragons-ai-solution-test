@@ -61,11 +61,24 @@ Plans:
   4. The bot decides to buy `hpot` when lives are low and gold allows, and only buys a level-raising upgrade from surplus gold after reserving a healing buffer
   5. The strategy test suite covers all of the above and runs fast and deterministically with no mocks and no network (inputs are plain objects)
 
-**Plans**: TBD
+**Plans**: 4 plans (4 waves — sequential; all touch `src/strategy.ts` + `src/strategy.test.ts`)
 
 Plans:
+**Wave 1**
 
-- [ ] TBD
+- [ ] 02-01-PLAN.md — Probability ranking + ad eligibility filter (TDD, STRAT-01/02): exact-string rank table, unknown→worst, drop expired/sub-floor/still-encrypted
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — Ad selection (TDD, STRAT-03): chooseAd by EV (reward×rank) with expiry-aware tiebreak, least-bad-gamble fallback, null on empty board
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — Shop decisions (TDD, STRAT-04/05): heal `hpot` when lives low (live cost), priciest affordable upgrade with 100-gold buffer reserved
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — State merge helpers (TDD, STRAT-06): applySolveResult carries `level` forward, applyBuyResult carries `score`/`highScore` forward, both pure
 
 ### Phase 3: Game Loop & Shop Integration
 
@@ -103,6 +116,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
-| 2. Strategy Core — Pure Decision Logic (TDD) | 0/TBD | Not started | - |
+| 2. Strategy Core — Pure Decision Logic (TDD) | 0/4 | Not started | - |
 | 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |
