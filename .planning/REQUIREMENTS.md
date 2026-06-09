@@ -73,30 +73,36 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| API-01 | TBD | Pending |
-| API-02 | TBD | Pending |
-| API-03 | TBD | Pending |
-| API-04 | TBD | Pending |
-| API-05 | TBD | Pending |
-| API-06 | TBD | Pending |
-| STRAT-01 | TBD | Pending |
-| STRAT-02 | TBD | Pending |
-| STRAT-03 | TBD | Pending |
-| STRAT-04 | TBD | Pending |
-| STRAT-05 | TBD | Pending |
-| STRAT-06 | TBD | Pending |
-| LOOP-01 | TBD | Pending |
-| LOOP-02 | TBD | Pending |
-| LOOP-03 | TBD | Pending |
-| LOG-01 | TBD | Pending |
-| LOG-02 | TBD | Pending |
-| TEST-01 | TBD | Pending |
+| API-01 | Phase 1 | Pending |
+| API-02 | Phase 1 | Pending |
+| API-03 | Phase 1 | Pending |
+| API-04 | Phase 1 | Pending |
+| API-05 | Phase 1 | Pending |
+| API-06 | Phase 1 | Pending |
+| STRAT-01 | Phase 2 | Pending |
+| STRAT-02 | Phase 2 | Pending |
+| STRAT-03 | Phase 2 | Pending |
+| STRAT-04 | Phase 2 | Pending |
+| STRAT-05 | Phase 2 | Pending |
+| STRAT-06 | Phase 2 | Pending |
+| LOOP-01 | Phase 3 | Pending |
+| LOOP-02 | Phase 3 | Pending |
+| LOOP-03 | Phase 3 | Pending |
+| LOG-01 | Phase 4 | Pending |
+| LOG-02 | Phase 4 | Pending |
+| TEST-01 | Phase 2 | Pending |
 
 **Coverage:**
 - v1 requirements: 18 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 18 ⚠️ (resolved during roadmap creation)
+- Mapped to phases: 18 ✓
+- Unmapped: 0
+
+**By phase:**
+- Phase 1 (Foundation — Types, API Client & Test Seam): 6 (API-01..06)
+- Phase 2 (Strategy Core — Pure Decision Logic, TDD): 7 (STRAT-01..06, TEST-01)
+- Phase 3 (Game Loop & Shop Integration): 3 (LOOP-01..03)
+- Phase 4 (Logger, CLI & Live Smoke): 2 (LOG-01..02)
 
 ---
 *Requirements defined: 2026-06-09*
-*Last updated: 2026-06-09 after initial definition*
+*Last updated: 2026-06-09 after roadmap creation (traceability populated)*
