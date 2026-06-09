@@ -13,7 +13,8 @@
  * adversarial ad can never crash the decision loop.
  *
  * This file grows across plans 02-01..02-04 (D-01..D-12). Plan 02-01 landed the
- * first two responsibilities; Plan 02-02 adds the selector:
+ * first two responsibilities; Plan 02-02 added the selector; Plan 02-03 adds the
+ * shop decision:
  *   - rankProbability (STRAT-01 / D-01): exact-string lookup, integer ranks
  *     0–10, unknown → 0, never throws.
  *   - filterEligibleAds (STRAT-02 / D-02 / D-03): drops expired, sub-floor
@@ -25,12 +26,24 @@
  *     floor, still excluding expired/still-encrypted ads) when none clear the
  *     floor; returns `null` only for a truly empty/no-solvable board. Never
  *     throws, never mutates its input, never selects a still-encrypted ad.
+ *   - chooseShopPurchase (STRAT-04 / STRAT-05 / D-08..D-11): heals (buys `hpot`,
+ *     looked up by id with its LIVE cost) when `lives < MAX_LIVES_TO_KEEP` and
+ *     gold allows; otherwise — only when lives are healthy — buys the priciest
+ *     affordable non-`hpot` upgrade while reserving HEAL_BUFFER_GOLD. Costs are
+ *     read live from the passed-in shop list (never hardcoded); returns `null`
+ *     when nothing should be bought. Never throws, never mutates its inputs.
  */
 
-import type { Ad } from "./types.js";
+import type { Ad, GameState, ShopItem } from "./types.js";
 
 /** Probability floor: only attempt ads ranked `Hmmm....` (6) or safer (D-02). */
 const PROBABILITY_FLOOR_RANK = 6;
+
+/** Heal below a full life buffer: buy `hpot` when `lives` is under this (D-08). */
+const MAX_LIVES_TO_KEEP = 3;
+
+/** Reserve ~2 potions' worth of gold before any upgrade is allowed (D-10). */
+const HEAL_BUFFER_GOLD = 100;
 
 /**
  * Exact-string-keyed rank table over the 11 verified probability labels
@@ -147,4 +160,50 @@ export function chooseAd(ads: Ad[]): Ad | null {
   // Fallback: relax ONLY the floor; still exclude expired and still-encrypted ads.
   const solvable = ads.filter((ad) => ad.expiresIn > 0 && !ad.encrypted);
   return bestOf(solvable);
+}
+
+/**
+ * Decide what — if anything — to buy from the shop this turn (STRAT-04 /
+ * STRAT-05), reading every cost LIVE from the passed-in `shop` list.
+ *
+ * Heal branch (D-08): if `state.lives < MAX_LIVES_TO_KEEP`, look up the `hpot`
+ * item by `id`; if present and its live `cost <= state.gold`, return it.
+ * Survival is the scoring lever (the game ends at `lives === 0`), so a full life
+ * buffer is restored before anything else.
+ *
+ * Ordering (D-09): the upgrade branch runs ONLY when lives are healthy
+ * (`state.lives >= MAX_LIVES_TO_KEEP`) — gated on healthy lives, NOT merely on
+ * "heal not purchased". A low-lives-but-broke state therefore returns `null`
+ * rather than spending the survival reserve on an upgrade.
+ *
+ * Upgrade branch (D-10 / D-11): among the non-`hpot` items still affordable
+ * while reserving `HEAL_BUFFER_GOLD` (`cost <= state.gold - HEAL_BUFFER_GOLD`),
+ * return the priciest (highest live `cost`) — a bigger level jump per turn is
+ * more turn-efficient. If none qualify, return `null`.
+ *
+ * Pure: reads `state` and `shop`, never mutates either or their items, and
+ * never throws — a missing `hpot` or an empty shop simply degrades to `null`.
+ */
+export function chooseShopPurchase(state: GameState, shop: ShopItem[]): ShopItem | null {
+  if (state.lives < MAX_LIVES_TO_KEEP) {
+    // Heal takes priority; the upgrade branch is gated on healthy lives, so an
+    // unhealthy-but-unaffordable state stops here rather than buying an upgrade.
+    const healingPotion = shop.find((item) => item.id === "hpot");
+    if (healingPotion && healingPotion.cost <= state.gold) {
+      return healingPotion;
+    }
+    return null;
+  }
+
+  // Lives are healthy: consider an upgrade, reserving the healing buffer.
+  const affordableUpgrades = shop.filter(
+    (item) => item.id !== "hpot" && item.cost <= state.gold - HEAL_BUFFER_GOLD,
+  );
+  if (affordableUpgrades.length === 0) {
+    return null;
+  }
+
+  return affordableUpgrades.reduce((priciest, candidate) =>
+    candidate.cost > priciest.cost ? candidate : priciest,
+  );
 }
