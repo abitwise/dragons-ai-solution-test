@@ -1,17 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { filterEligibleAds, rankProbability } from "./strategy.js";
+import { chooseAd, filterEligibleAds, rankProbability } from "./strategy.js";
 import type { Ad } from "./types.js";
 
 /**
- * Pure-function suite for the strategy core (Plan 02-01).
+ * Pure-function suite for the strategy core (Plans 02-01, 02-02).
  *
- * Proves the first two responsibilities of `strategy.ts`:
+ * Proves the responsibilities of `strategy.ts`:
  *   - `rankProbability` (STRAT-01 / D-01): every one of the 11 verified labels
  *     maps to its exact integer rank 0–10, the exact four-dot `"Hmmm...."`
  *     maps to 6, and an unknown label ranks worst (0) without ever throwing.
  *   - `filterEligibleAds` (STRAT-02 / D-02 / D-03): drops expired, sub-floor
  *     (rank < 6), and still-encrypted ads in one place, returning a new array
  *     and never mutating its input.
+ *   - `chooseAd` (STRAT-03 / D-04..D-07): among eligible ads picks the highest
+ *     expected value (`reward × rank`), breaks ties by sooner expiry then higher
+ *     reward, falls back to a least-bad gamble when none clear the floor, and
+ *     returns `null` only for a truly empty/no-solvable board — never throwing,
+ *     never selecting a still-encrypted ad, never mutating its input.
  *
  * All fixtures are plain objects — no mocks, no FakeApiClient, no network
  * (TEST-01). The unit under test is `strategy.ts`, which imports only types.
@@ -161,5 +166,161 @@ describe("filterEligibleAds (STRAT-02)", () => {
   it("never throws on an empty board", () => {
     expect(() => filterEligibleAds([])).not.toThrow();
     expect(filterEligibleAds([])).toEqual([]);
+  });
+});
+
+describe("chooseAd (STRAT-03)", () => {
+  describe("EV selection (D-04)", () => {
+    it("prefers the higher-EV safe ad over a higher-raw-reward risky ad", () => {
+      // A: reward 200 × rank 10 (Sure thing) = EV 2000 — the safe, lower-reward ad.
+      // B: reward 300 × rank 6 (Hmmm....)   = EV 1800 — bigger reward, worse odds.
+      // EV must beat raw reward (PITFALLS #4): A wins despite B's larger reward.
+      const safeWinner = baseAd({ adId: "A-safe", reward: 200, probability: "Sure thing" });
+      const richRisky = baseAd({ adId: "B-rich", reward: 300, probability: "Hmmm...." });
+
+      expect(chooseAd([richRisky, safeWinner])?.adId).toBe("A-safe");
+    });
+
+    it("never chooses a sub-floor ad even when its raw reward is huge (filtered before EV)", () => {
+      // A monster-reward 'Risky' (rank 4 < floor) is dropped before EV ranking,
+      // so the modest safe ad wins despite a far smaller reward × rank product.
+      const safeWinner = baseAd({ adId: "A-safe", reward: 100, probability: "Sure thing" }); // EV 1000
+      const subFloorMonster = baseAd({ adId: "B-monster", reward: 5000, probability: "Risky" }); // rank 4: dropped
+
+      expect(chooseAd([subFloorMonster, safeWinner])?.adId).toBe("A-safe");
+    });
+
+    it("returns the single eligible ad when only one clears the floor", () => {
+      const only = baseAd({ adId: "only", reward: 100, probability: "Sure thing" });
+      const dropped = baseAd({ adId: "drop", reward: 9000, probability: "Gamble" }); // rank 5: dropped
+
+      expect(chooseAd([only, dropped])?.adId).toBe("only");
+    });
+  });
+
+  describe("expiry-aware tiebreak (D-05)", () => {
+    it("on an EV tie, prefers the sooner-expiring ad (lowest expiresIn)", () => {
+      // Both EV 1000; lower expiresIn wins (use-it-or-lose-it).
+      const later = baseAd({
+        adId: "later",
+        reward: 100,
+        probability: "Sure thing", // 100 × 10 = 1000
+        expiresIn: 5,
+      });
+      const sooner = baseAd({
+        adId: "sooner",
+        reward: 125,
+        probability: "Walk in the park", // 125 × 8 = 1000
+        expiresIn: 2,
+      });
+
+      expect(chooseAd([later, sooner])?.adId).toBe("sooner");
+    });
+
+    it("on an EV tie AND an expiry tie, prefers the higher-reward ad", () => {
+      // Both EV 1000 AND both expiresIn 3; higher reward wins the secondary tiebreak.
+      const lowerReward = baseAd({
+        adId: "low-reward",
+        reward: 100,
+        probability: "Sure thing", // 100 × 10 = 1000
+        expiresIn: 3,
+      });
+      const higherReward = baseAd({
+        adId: "high-reward",
+        reward: 125,
+        probability: "Walk in the park", // 125 × 8 = 1000
+        expiresIn: 3,
+      });
+
+      expect(chooseAd([lowerReward, higherReward])?.adId).toBe("high-reward");
+    });
+  });
+
+  describe("least-bad-gamble fallback (D-06)", () => {
+    it("returns the highest-EV ad among an all-sub-floor (but decoded, non-expired) board", () => {
+      // No ad clears the floor; relax it and return the best EV among the gambles.
+      // gamble: 100 × 5 = 500; risky: 100 × 4 = 400  → the 'Gamble' wins.
+      const gamble = baseAd({ adId: "gamble", reward: 100, probability: "Gamble" });
+      const risky = baseAd({ adId: "risky", reward: 100, probability: "Risky" });
+
+      expect(chooseAd([risky, gamble])?.adId).toBe("gamble");
+    });
+
+    it("does not return null when the board is all-sub-floor but solvable", () => {
+      const gamble = baseAd({ adId: "gamble", reward: 100, probability: "Gamble" });
+
+      expect(chooseAd([gamble])).not.toBeNull();
+      expect(chooseAd([gamble])?.adId).toBe("gamble");
+    });
+
+    it("never relaxes onto a still-encrypted ad in the fallback (it would 400 on solve)", () => {
+      // Both sub-floor; the still-encrypted one must be excluded even in fallback,
+      // so the decoded gamble is chosen despite the encrypted ad's higher EV.
+      const encryptedRich = baseAd({
+        adId: "enc-rich",
+        reward: 9000,
+        probability: "Gamble", // EV 45000 but still-encrypted → excluded
+        encrypted: 1,
+      });
+      const decodedGamble = baseAd({ adId: "dec-gamble", reward: 100, probability: "Gamble" });
+
+      expect(chooseAd([encryptedRich, decodedGamble])?.adId).toBe("dec-gamble");
+    });
+
+    it("never relaxes onto an expired ad in the fallback", () => {
+      // Both sub-floor; the expired one is excluded even in fallback.
+      const expiredRich = baseAd({
+        adId: "exp-rich",
+        reward: 9000,
+        probability: "Gamble",
+        expiresIn: 0,
+      });
+      const liveRisky = baseAd({ adId: "live-risky", reward: 100, probability: "Risky" });
+
+      expect(chooseAd([expiredRich, liveRisky])?.adId).toBe("live-risky");
+    });
+  });
+
+  describe("empty / no-solvable board (D-07)", () => {
+    it("returns null for an empty board", () => {
+      expect(chooseAd([])).toBeNull();
+    });
+
+    it("returns null for a board of only expired ads", () => {
+      const allExpired = [
+        baseAd({ adId: "e1", probability: "Sure thing", expiresIn: 0 }),
+        baseAd({ adId: "e2", probability: "Gamble", expiresIn: -1 }),
+      ];
+      expect(chooseAd(allExpired)).toBeNull();
+    });
+
+    it("returns null for a board of only still-encrypted ads", () => {
+      const allEncrypted = [
+        baseAd({ adId: "x1", probability: "Sure thing", encrypted: 1 }),
+        baseAd({ adId: "x2", probability: "Gamble", encrypted: 2 }),
+      ];
+      expect(chooseAd(allEncrypted)).toBeNull();
+    });
+
+    it("never throws on empty / all-expired / all-still-encrypted boards", () => {
+      expect(() => chooseAd([])).not.toThrow();
+      expect(() => chooseAd([baseAd({ expiresIn: 0 })])).not.toThrow();
+      expect(() => chooseAd([baseAd({ encrypted: 1 })])).not.toThrow();
+    });
+  });
+
+  describe("purity (D-04..D-07)", () => {
+    it("does not mutate the input array or its ad objects", () => {
+      const board = [
+        baseAd({ adId: "a", reward: 200, probability: "Sure thing" }),
+        baseAd({ adId: "b", reward: 300, probability: "Hmmm...." }),
+        baseAd({ adId: "c", reward: 5000, probability: "Risky" }),
+      ];
+      const snapshot = board.map((ad) => ({ ...ad }));
+
+      chooseAd(board);
+
+      expect(board).toEqual(snapshot);
+    });
   });
 });
