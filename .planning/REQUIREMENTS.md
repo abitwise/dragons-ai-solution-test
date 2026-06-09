@@ -14,7 +14,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [x] **API-03**: Bot can solve a chosen ad and read its result (success, lives, gold, score, turn)
 - [x] **API-04**: Bot can fetch the shop catalog and buy an item by id
 - [x] **API-05**: Bot decodes encrypted ads (Base64 for `encrypted:1`, ROT13 for `encrypted:2`) across adId, message, and probability
-- [ ] **API-06**: API client is robust to real-world quirks — URL-encodes path segments (adId/itemId), coerces string `reward` to number, tolerates non-JSON (HTML) error bodies, retries transient failures with bounded backoff, and terminates cleanly without crashing
+- [x] **API-06**: API client is robust to real-world quirks — URL-encodes path segments (adId/itemId), coerces string `reward` to number, tolerates non-JSON (HTML) error bodies, retries transient failures with bounded backoff, and terminates cleanly without crashing
 
 ### Decision Strategy
 
@@ -78,7 +78,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | API-03 | Phase 1 | Complete |
 | API-04 | Phase 1 | Complete |
 | API-05 | Phase 1 | Complete |
-| API-06 | Phase 1 | Pending |
+| API-06 | Phase 1 | Complete |
 | STRAT-01 | Phase 2 | Pending |
 | STRAT-02 | Phase 2 | Pending |
 | STRAT-03 | Phase 2 | Pending |

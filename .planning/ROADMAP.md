@@ -13,7 +13,7 @@ The bot is built inside-out, test-first. Phase 1 establishes the shared types an
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation — Types, API Client & Test Seam** - Shared types plus the injectable HttpApiClient (retry, decode, coercion) and the FakeApiClient double; suite passes offline
+- [x] **Phase 1: Foundation — Types, API Client & Test Seam** - Shared types plus the injectable HttpApiClient (retry, decode, coercion) and the FakeApiClient double; suite passes offline (completed 2026-06-09)
 - [ ] **Phase 2: Strategy Core — Pure Decision Logic (TDD)** - Test-first pure functions for probability ranking, ad selection, state merge, and shop decisions
 - [ ] **Phase 3: Game Loop & Shop Integration** - A thin runner that autoplays one full game to game-over with shop buys and infinite-loop guards
 - [ ] **Phase 4: Logger, CLI & Live Smoke** - Leveled human-readable logging, the CLI composition root, a clear final-score summary, and a live smoke run
@@ -46,7 +46,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-04-PLAN.md — HttpApiClient (TDD): zod boundary, retry-at-edge, encodeURIComponent, decode integration
+- [x] 01-04-PLAN.md — HttpApiClient (TDD): zod boundary, retry-at-edge, encodeURIComponent, decode integration
 
 ### Phase 2: Strategy Core — Pure Decision Logic (TDD)
 
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation — Types, API Client & Test Seam | 3/4 | In Progress|  |
+| 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete   | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 0/TBD | Not started | - |
 | 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |
