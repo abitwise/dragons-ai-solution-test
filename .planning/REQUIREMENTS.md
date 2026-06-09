@@ -21,8 +21,8 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [x] **STRAT-01**: Bot maps each probability string to a rank via exact-string lookup; an unknown string ranks worst and never throws
 - [x] **STRAT-02**: Bot filters out ineligible ads (expired `expiresIn <= 0`, below the probability floor, or unhandled encryption)
 - [x] **STRAT-03**: Bot selects the best ad by expected value (reward × success rank) with an expiry-aware tiebreak
-- [ ] **STRAT-04**: Bot buys a healing potion (`hpot`) when lives are low and gold allows
-- [ ] **STRAT-05**: Bot buys level-raising upgrades from surplus gold only after reserving a healing buffer
+- [x] **STRAT-04**: Bot buys a healing potion (`hpot`) when lives are low and gold allows
+- [x] **STRAT-05**: Bot buys level-raising upgrades from surplus gold only after reserving a healing buffer
 - [ ] **STRAT-06**: Bot merges solve and buy responses into game state correctly (solve omits `level`, buy omits `score`)
 
 ### Autoplay Loop
@@ -82,8 +82,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | STRAT-01 | Phase 2 | Complete |
 | STRAT-02 | Phase 2 | Complete |
 | STRAT-03 | Phase 2 | Complete |
-| STRAT-04 | Phase 2 | Pending |
-| STRAT-05 | Phase 2 | Pending |
+| STRAT-04 | Phase 2 | Complete |
+| STRAT-05 | Phase 2 | Complete |
 | STRAT-06 | Phase 2 | Pending |
 | LOOP-01 | Phase 3 | Pending |
 | LOOP-02 | Phase 3 | Pending |

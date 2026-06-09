@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-09T13:30:32.384Z"
+last_updated: "2026-06-09T13:35:35.250Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 25
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 ## Current Position
 
 Phase: 02 (strategy-core-pure-decision-logic-tdd) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-06-09
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [████████░░] 75%
 | Phase 01 P01-04 | 4 | 3 tasks | 2 files |
 | Phase 02 P01 | 3 | 2 tasks | 2 files |
 | Phase 02 P02 | 2min | 2 tasks | 2 files |
+| Phase 02 P03 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 2 (02-01): eligibility filter drops expired/sub-floor/still-encrypted ads in one place, returns a new array; !ad.encrypted means undecodable per decode.ts clearing flag to 0 (D-02/D-03/D-09)
 - [Phase ?]: Phase 2 (02-02): chooseAd returns Ad | null (null = no-ad signal the runner branches on); selection via one comparator preferAd folded by reduce (bestOf): EV desc -> expiresIn asc -> reward desc (D-04/D-05/D-07)
 - [Phase ?]: Phase 2 (02-02): least-bad-gamble fallback relaxes ONLY the floor (ads.filter expiresIn>0 && !encrypted); never selects an expired or still-encrypted ad that would 400 (D-06/PITFALLS #2); reuses Plan 01 filterEligibleAds+rankProbability verbatim, no rank-table duplication
+- [Phase ?]: Phase 2 (02-03): chooseShopPurchase(state, shop) is one function (heal-or-upgrade-or-none); heal branch returns early when lives below MAX_LIVES_TO_KEEP=3, gating the upgrade branch on healthy lives not on heal-not-bought (D-08/D-09)
+- [Phase ?]: Phase 2 (02-03): upgrade reserves HEAL_BUFFER_GOLD=100 (cost <= gold - 100) and picks the priciest affordable non-hpot via reduce (D-10/D-11); all costs read LIVE from the shop (no hardcoded 50/100/300), proven by a 70-cost-hpot test that does not heal at gold 60
 
 ### Pending Todos
 
@@ -105,6 +108,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T13:30:17.966Z
+Last session: 2026-06-09T13:35:19.343Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None

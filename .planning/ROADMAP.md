@@ -74,7 +74,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03-PLAN.md — Shop decisions (TDD, STRAT-04/05): heal `hpot` when lives low (live cost), priciest affordable upgrade with 100-gold buffer reserved
+- [x] 02-03-PLAN.md — Shop decisions (TDD, STRAT-04/05): heal `hpot` when lives low (live cost), priciest affordable upgrade with 100-gold buffer reserved
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -116,6 +116,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
-| 2. Strategy Core — Pure Decision Logic (TDD) | 2/4 | In Progress|  |
+| 2. Strategy Core — Pure Decision Logic (TDD) | 3/4 | In Progress|  |
 | 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |
