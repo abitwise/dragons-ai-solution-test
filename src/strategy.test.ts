@@ -721,6 +721,31 @@ describe("applyBuyResult (STRAT-06 / D-12)", () => {
       expect(merged.score).toBe(700);
       expect(merged.highScore).toBe(900);
     });
+
+    it("WR-02 seam reachability: a raw BuyResult from ApiClient.buy() folds in, preserving prior score/highScore", () => {
+      // WR-02: ApiClient.buy() now returns a raw BuyResult (Promise<BuyResult>),
+      // symmetric with solve(). applyBuyResult is therefore reachable end-to-end
+      // through the injected seam: given the value buy() now returns, the prior
+      // score/highScore survive and gold/lives/level/turn are updated. This is
+      // the regression guard proving the score-protect path is not dead code.
+      const prior = baseState({ score: 700, highScore: 900 });
+      const rawBuyResult: BuyResult = {
+        shoppingSuccess: true,
+        gold: 250,
+        lives: 2,
+        level: 3,
+        turn: 9,
+      };
+
+      const merged = applyBuyResult(prior, rawBuyResult);
+
+      expect(merged.score).toBe(700); // prior score survives the buy merge
+      expect(merged.highScore).toBe(900); // prior highScore survives the buy merge
+      expect(merged.gold).toBe(250);
+      expect(merged.lives).toBe(2);
+      expect(merged.level).toBe(3);
+      expect(merged.turn).toBe(9);
+    });
   });
 
   describe("purity (D-12)", () => {

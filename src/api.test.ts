@@ -310,8 +310,11 @@ describe("HttpApiClient", () => {
     });
   });
 
-  describe("buy → merged GameState", () => {
-    it("folds the buy result (level, no score) into a GameState", async () => {
+  describe("buy → raw BuyResult", () => {
+    it("returns the raw validated BuyResult (shoppingSuccess/gold/lives/level/turn) — no GameState wrapping", async () => {
+      // WR-02: buy() is symmetric with solve() — it returns the raw BuyResult so
+      // the runner folds it via applyBuyResult (carrying score/highScore forward).
+      // It must NOT wrap into a GameState with score:0/highScore:0 placeholders.
       stubFetch().mockResolvedValueOnce(
         makeResponse(200, {
           shoppingSuccess: true,
@@ -323,13 +326,19 @@ describe("HttpApiClient", () => {
       );
 
       const client = new HttpApiClient({ delay: noDelay });
-      const state = await client.buy("g1", "cs");
+      const result = await client.buy("g1", "cs");
 
-      expect(state.gameId).toBe("g1");
-      expect(state.level).toBe(1);
-      expect(state.gold).toBe(50);
-      expect(state.lives).toBe(3);
-      expect(state.turn).toBe(7);
+      expect(result.shoppingSuccess).toBe(true);
+      expect(result.gold).toBe(50);
+      expect(result.lives).toBe(3);
+      expect(result.level).toBe(1);
+      expect(result.turn).toBe(7);
+
+      // The raw BuyResult carries NONE of the GameState-only fields — those come
+      // from the prior threaded state via applyBuyResult, never from buy().
+      expect(result).not.toHaveProperty("gameId");
+      expect(result).not.toHaveProperty("score");
+      expect(result).not.toHaveProperty("highScore");
     });
   });
 

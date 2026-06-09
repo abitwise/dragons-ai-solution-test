@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FakeApiClient } from "./fake-api-client.js";
-import type { Ad, GameState, ShopItem, SolveResult } from "./types.js";
+import type { Ad, BuyResult, GameState, ShopItem, SolveResult } from "./types.js";
 
 /**
  * Mechanical-contract tests for `FakeApiClient`. The double has NO game logic to
@@ -69,16 +69,18 @@ describe("FakeApiClient", () => {
 
   it("returns scripted values for startGame, getShop, and buy", async () => {
     const shop: ShopItem[] = [{ id: "hpot", name: "Healing potion", cost: 50 }];
-    const boughtState: GameState = { ...baseGameState, gold: 0, lives: 4 };
+    // WR-02: buy() now returns a raw BuyResult (symmetric with solve()), NOT a
+    // pre-merged GameState — the runner folds it via applyBuyResult.
+    const boughtResult: BuyResult = { shoppingSuccess: true, gold: 0, lives: 4, level: 0, turn: 1 };
     const client = new FakeApiClient({
       startGame: [baseGameState],
       getShop: [shop],
-      buy: [boughtState],
+      buy: [boughtResult],
     });
 
     await expect(client.startGame()).resolves.toEqual(baseGameState);
     await expect(client.getShop("g1")).resolves.toEqual(shop);
-    await expect(client.buy("g1", "hpot")).resolves.toEqual(boughtState);
+    await expect(client.buy("g1", "hpot")).resolves.toEqual(boughtResult);
   });
 
   it("throws an Error naming the method when its queue is exhausted (T-01-06)", async () => {
