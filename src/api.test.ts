@@ -186,7 +186,9 @@ describe("HttpApiClient", () => {
     it("retries on a thrown network/transport error, then succeeds", async () => {
       const spy = stubFetch()
         .mockRejectedValueOnce(new Error("ECONNRESET"))
-        .mockResolvedValueOnce(makeResponse(200, [{ id: "hpot", name: "Healing potion", cost: 50 }]));
+        .mockResolvedValueOnce(
+          makeResponse(200, [{ id: "hpot", name: "Healing potion", cost: 50 }]),
+        );
 
       const client = new HttpApiClient({ delay: noDelay });
       const shop = await client.getShop("g1");
@@ -246,9 +248,7 @@ describe("HttpApiClient", () => {
 
   describe("error taxonomy & HTML bodies (D-06, PITFALLS #5)", () => {
     it("surfaces a 400 with an HTML body as a BoundaryError, not a raw SyntaxError", async () => {
-      stubFetch().mockResolvedValueOnce(
-        makeResponse(400, "<html><body>Bad Request</body></html>"),
-      );
+      stubFetch().mockResolvedValueOnce(makeResponse(400, "<html><body>Bad Request</body></html>"));
 
       const client = new HttpApiClient({ delay: noDelay });
       await expect(client.solve("g1", "bad")).rejects.toBeInstanceOf(BoundaryError);

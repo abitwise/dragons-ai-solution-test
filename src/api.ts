@@ -245,7 +245,17 @@ export class HttpApiClient implements ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const maxAttempts = opts.retry ? MAX_READ_ATTEMPTS : 1;
-    let lastTransportError: TransportError | undefined;
+
+    // A retryable transport failure (thrown network error OR a 5xx) either backs
+    // off and lets the loop try again, or — when the budget is spent — throws the
+    // typed TransportError. Returns a sentinel the caller `continue`s on.
+    const retryOrThrow = async (attempt: number, error: TransportError): Promise<"retry"> => {
+      if (attempt < maxAttempts) {
+        await this.delay(attempt * BACKOFF_MS);
+        return "retry";
+      }
+      throw error;
+    };
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       let response: Response;
@@ -256,31 +266,23 @@ export class HttpApiClient implements ApiClient {
         });
       } catch (cause) {
         // A thrown fetch = network/transport failure → retryable.
-        lastTransportError = new TransportError(
-          `Network error calling ${method} ${path}`,
-          undefined,
-          {
-            cause,
-          },
+        await retryOrThrow(
+          attempt,
+          new TransportError(`Network error calling ${method} ${path}`, undefined, { cause }),
         );
-        if (attempt < maxAttempts) {
-          await this.delay(attempt * BACKOFF_MS);
-          continue;
-        }
-        throw lastTransportError;
+        continue;
       }
 
       // 5xx is a retryable transport-layer failure.
       if (response.status >= 500) {
-        lastTransportError = new TransportError(
-          `Server error ${response.status} calling ${method} ${path}`,
-          response.status,
+        await retryOrThrow(
+          attempt,
+          new TransportError(
+            `Server error ${response.status} calling ${method} ${path}`,
+            response.status,
+          ),
         );
-        if (attempt < maxAttempts) {
-          await this.delay(attempt * BACKOFF_MS);
-          continue;
-        }
-        throw lastTransportError;
+        continue;
       }
 
       // Any other non-2xx (e.g. 400) is TERMINAL. Read as TEXT — the body may be
@@ -316,9 +318,10 @@ export class HttpApiClient implements ApiClient {
       return parsed.data;
     }
 
-    // Unreachable in practice (the loop always returns or throws), but satisfies
-    // the type checker and guards against a misconfigured attempt count.
-    throw lastTransportError ?? new TransportError(`Request failed: ${method} ${path}`);
+    // Unreachable in practice (the loop always returns or throws via
+    // retryOrThrow on the last attempt), but satisfies the type checker and
+    // guards against a misconfigured attempt count.
+    throw new TransportError(`Request failed: ${method} ${path}`);
   }
 }
 
