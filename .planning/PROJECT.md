@@ -20,7 +20,11 @@ away, this loop must work.
 
 ### Validated
 
-(None yet — ship to validate)
+- **Foundation / API layer (Phase 1, 2026-06-09):** the injectable `ApiClient` seam + shared
+  types, cross-field `decodeAd` (Base64/ROT13), the hand-written offline `FakeApiClient`, and the
+  live `HttpApiClient` (zod boundary, bounded retry, `encodeURIComponent`, HTML-error tolerance)
+  all exist and are TDD-covered with zero live-network tests (API-01..API-06). The end-to-end
+  capability requirements below validate once the strategy + runner phases wire this layer through.
 
 ### Active
 
