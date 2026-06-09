@@ -17,9 +17,10 @@
  * shop decision; Plan 02-04 completes the core with the two state-merge helpers:
  *   - rankProbability (STRAT-01 / D-01): exact-string lookup, integer ranks
  *     0–10, unknown → 0, never throws.
- *   - filterEligibleAds (STRAT-02 / D-02 / D-03): drops expired, sub-floor
- *     (rank < PROBABILITY_FLOOR_RANK), and still-encrypted ads in one place,
- *     returning a new array without mutating its input.
+ *   - filterEligibleAds (STRAT-02 / D-02 / D-03 / WR-01): drops expired,
+ *     sub-floor (rank < PROBABILITY_FLOOR_RANK), still-encrypted, and
+ *     non-finite-reward (`NaN`/`±Infinity`) ads in one place, returning a new
+ *     array without mutating its input.
  *   - chooseAd (STRAT-03 / D-04..D-07): among the floor-eligible ads picks the
  *     highest expected value (`reward × rank`), tiebreaking on sooner expiry
  *     then higher reward; falls back to a least-bad gamble (relaxing ONLY the
@@ -92,6 +93,11 @@ export function rankProbability(probability: string): number {
  *     API client could not decode it (Phase 1 D-09), so solving it would 400
  *     (PITFALLS #2). A decoded/plaintext ad has `encrypted` cleared to
  *     `0`/`undefined` (see `decode.ts`), which is falsy and therefore kept.
+ *   - its `reward` is a FINITE number (WR-01): `Ad.reward` is coerced from a
+ *     wire string in `api.ts`, and a failed coercion yields `NaN`. A non-finite
+ *     reward makes its expected value `NaN`, which would silently fall through
+ *     `preferAd` and corrupt selection — so it is dropped here (a finite
+ *     negative reward is NOT excluded; only `NaN`/`±Infinity`).
  *
  * Pure: `Array.filter` returns a NEW array and never mutates the input array or
  * its ad objects. Never throws.
@@ -101,7 +107,8 @@ export function filterEligibleAds(ads: Ad[]): Ad[] {
     (ad) =>
       ad.expiresIn > 0 &&
       rankProbability(ad.probability) >= PROBABILITY_FLOOR_RANK &&
-      !ad.encrypted,
+      !ad.encrypted &&
+      Number.isFinite(ad.reward),
   );
 }
 
@@ -145,10 +152,12 @@ function bestOf(candidates: Ad[]): Ad | null {
  *
  * Least-bad-gamble fallback (D-06): if NO ad clears the floor, relax ONLY the
  * floor — the "solvable set" is the present ads that are non-expired
- * (`expiresIn > 0`) and NOT still-encrypted (`!encrypted`). Return the best of
- * that set by the SAME ordering. The floor is the only relaxed constraint: a
- * still-encrypted ad would 400 on `/solve` (PITFALLS #2) and an expired ad is
- * gone, so neither is ever selected even in the fallback.
+ * (`expiresIn > 0`), NOT still-encrypted (`!encrypted`), and have a FINITE
+ * `reward` (WR-01). Return the best of that set by the SAME ordering. The floor
+ * is the only relaxed constraint: a still-encrypted ad would 400 on `/solve`
+ * (PITFALLS #2), an expired ad is gone, and a non-finite-reward ad would corrupt
+ * EV selection — so none is ever selected even in the fallback (the fallback
+ * stays in lock-step with the primary filter on every constraint but the floor).
  *
  * No-ad signal (D-07): if even the solvable set is empty (empty board, or all
  * ads expired/still-encrypted), return `null`. The runner (Phase 3) branches on
@@ -162,8 +171,11 @@ export function chooseAd(ads: Ad[]): Ad | null {
     return bestOf(eligible);
   }
 
-  // Fallback: relax ONLY the floor; still exclude expired and still-encrypted ads.
-  const solvable = ads.filter((ad) => ad.expiresIn > 0 && !ad.encrypted);
+  // Fallback: relax ONLY the floor; still exclude expired, still-encrypted, and
+  // non-finite-reward ads (lock-step with filterEligibleAds, WR-01).
+  const solvable = ads.filter(
+    (ad) => ad.expiresIn > 0 && !ad.encrypted && Number.isFinite(ad.reward),
+  );
   return bestOf(solvable);
 }
 
