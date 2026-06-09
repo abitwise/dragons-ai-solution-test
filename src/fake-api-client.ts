@@ -61,24 +61,28 @@ export class FakeApiClient implements ApiClient {
 
   constructor(private readonly script: FakeApiScript = {}) {}
 
-  startGame(): Promise<GameState> {
-    return Promise.resolve(this.next("startGame", []));
+  // Each method is `async` so a fail-loud throw inside `next` (exhausted/absent
+  // queue) surfaces as a REJECTED promise — the idiomatic contract for a
+  // Promise-returning API — instead of a synchronous throw that an `await`ing
+  // caller could not `.catch`.
+  async startGame(): Promise<GameState> {
+    return this.next("startGame", []);
   }
 
-  getMessages(gameId: string): Promise<Ad[]> {
-    return Promise.resolve(this.next("getMessages", [gameId]));
+  async getMessages(gameId: string): Promise<Ad[]> {
+    return this.next("getMessages", [gameId]);
   }
 
-  solve(gameId: string, adId: string): Promise<SolveResult> {
-    return Promise.resolve(this.next("solve", [gameId, adId]));
+  async solve(gameId: string, adId: string): Promise<SolveResult> {
+    return this.next("solve", [gameId, adId]);
   }
 
-  getShop(gameId: string): Promise<ShopItem[]> {
-    return Promise.resolve(this.next("getShop", [gameId]));
+  async getShop(gameId: string): Promise<ShopItem[]> {
+    return this.next("getShop", [gameId]);
   }
 
-  buy(gameId: string, itemId: string): Promise<GameState> {
-    return Promise.resolve(this.next("buy", [gameId, itemId]));
+  async buy(gameId: string, itemId: string): Promise<GameState> {
+    return this.next("buy", [gameId, itemId]);
   }
 
   /**
