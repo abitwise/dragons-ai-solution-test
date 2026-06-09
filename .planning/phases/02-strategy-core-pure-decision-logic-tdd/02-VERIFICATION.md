@@ -1,110 +1,163 @@
 ---
 phase: 02-strategy-core-pure-decision-logic-tdd
-verified: 2026-06-09T16:47:55Z
-status: human_needed
+verified: 2026-06-09T18:10:00Z
+status: passed
 score: 5/5 must-haves verified
 overrides_applied: 0
-human_verification:
-  - test: "Confirm WR-02 wiring intent is documented before Phase 3 plan is written"
-    expected: "The strategy module's applyBuyResult expects a raw BuyResult, but ApiClient.buy() returns a merged GameState (Promise<GameState>). A Phase 3 runner that wires naively will either (a) skip applyBuyResult and adopt the score:0 placeholder directly, or (b) pass a GameState into applyBuyResult which will fail to type-check. Before Phase 3 begins, verify that either ApiClient.buy() is changed to return Promise<BuyResult>, or a documented convention is established that the runner must extract the raw buy result before merging."
-    why_human: "This is an inter-phase seam correctness issue. The strategy module is internally correct and all 68 tests pass, but the contract between api.ts (which returns GameState from buy()) and applyBuyResult (which expects BuyResult) is inconsistent. No automated check can verify that the Phase 3 plan will wire these correctly — it requires a human decision on how to resolve the seam mismatch before Phase 3 is planned."
+re_verification:
+  previous_status: human_needed
+  previous_score: 5/5
+  gaps_closed:
+    - "WR-02: buy() seam now returns Promise<BuyResult> across types.ts/api.ts/fake-api-client.ts — no GameState construction, no score:0/highScore:0 placeholders; applyBuyResult is reachable end-to-end; regression test at strategy.test.ts:728-751 proves prior score/highScore survive the buy merge"
+    - "WR-01: non-finite reward ads dropped in BOTH filterEligibleAds (via shared isAttemptable predicate at strategy.ts:124-126) AND the chooseAd fallback solvable filter (strategy.ts:190) — lock-step via shared function, not duplicate predicates"
+    - "WR-03: Number.isFinite(item.cost) guards present in BOTH the heal lookup (strategy.ts:228) and the upgrade affordableUpgrades filter (strategy.ts:238) — NaN/-Infinity cost never fires a heal or passes as a free upgrade"
+  gaps_remaining: []
+  regressions: []
 ---
 
-# Phase 2: Strategy Core (Pure Decision Logic, TDD) Verification Report
+# Phase 02: Strategy Core — Pure Decision Logic (TDD) Verification Report
 
 **Phase Goal:** All "what should the bot do" logic exists as pure, fully test-driven functions in `strategy.ts`, so decisions are deterministic, readable, and proven before any loop integrates them.
-**Verified:** 2026-06-09T16:47:55Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Verified:** 2026-06-09T18:10:00Z
+**Status:** passed
+**Re-verification:** Yes — after gap closure plan 02-05 (WR-01, WR-02, WR-03)
+
+---
 
 ## Goal Achievement
 
-### Observable Truths
+### Observable Truths (ROADMAP Success Criteria)
 
 | # | Truth | Status | Evidence |
-|---|-------|--------|----------|
-| 1 | Every one of the 11 probability strings (including the exact `"Hmmm...."` four-dot label) maps to its rank, and an unknown string ranks worst and never throws | VERIFIED | `RANK` table at strategy.ts:60-72 maps all 11 labels; `"Hmmm...."`: 6 is literal on line 65. `rankProbability` returns `RANK[probability] ?? 0` — total function. 16 rank tests pass (11 labeled + 4 unknown/never-throw cases). Test at line 135 asserts exact four-dot literal. |
-| 2 | Given a mixed board, the chosen ad is the best by expected value (`reward × rank`) after filtering expired, sub-floor, and unhandled-encryption ads, with an expiry-aware tiebreak; an empty or all-risky board yields the defined fallback rather than a crash | VERIFIED | `chooseAd` at strategy.ts:159-168 composes `filterEligibleAds` (primary) with a solvable-set fallback (relaxes only floor, still excludes expired and `!ad.encrypted`). `preferAd` at lines 122-131 implements EV-desc → expiresIn-asc → reward-desc ordering. 14 `chooseAd` tests pass covering: EV beats raw reward (A EV=2000 beats B EV=1800), sub-floor monster excluded, expiry tiebreak, reward tiebreak, least-bad gamble, empty/all-expired/all-encrypted boards return null, fallback never selects still-encrypted. |
-| 3 | Applying a solve result and applying a buy result each merge into game state correctly — solve omits `level`, buy omits `score` — without clobbering the missing field | VERIFIED | `applySolveResult` at strategy.ts:227-236 spreads prior state then overrides lives/gold/score/highScore/turn, leaving `level` from the prior state. `applyBuyResult` at lines 254-262 spreads prior state then overrides lives/gold/level/turn, leaving score/highScore. 8 merge tests pass including placeholder-restore test (prior score:700 survives a BuyResult with score:0 in api.ts). Non-mutation snapshot tests also pass. |
-| 4 | The bot decides to buy `hpot` when lives are low and gold allows, and only buys a level-raising upgrade from surplus gold after reserving a healing buffer | VERIFIED | `chooseShopPurchase` at strategy.ts:192-213 gates the upgrade branch on `state.lives >= MAX_LIVES_TO_KEEP` (not merely "heal not purchased") via early return. Upgrade filter: `item.cost <= state.gold - HEAL_BUFFER_GOLD`. `MAX_LIVES_TO_KEEP = 3`, `HEAL_BUFFER_GOLD = 100`. 16 shop tests pass including the critical live-cost proof (hpot priced at 70 does NOT fire heal at gold 60). |
-| 5 | The strategy test suite covers all of the above and runs fast and deterministically with no mocks and no network (inputs are plain objects) | VERIFIED | `npx vitest run src/strategy.test.ts` — 68 tests pass in 127ms. All fixtures are plain objects (baseAd, baseState, shopItem, baseSolve, baseBuy builders). No FakeApiClient, no network, no `vi.fn()` mocks. The strategy module imports only `import type { Ad, BuyResult, GameState, ShopItem, SolveResult } from "./types.js"` — zero runtime imports confirmed by grep (returns 0). |
+|---|-------|--------|---------|
+| 1 | Every one of the 11 probability strings (including the exact `"Hmmm...."` four-dot label) maps to its rank; unknown string ranks worst and never throws | VERIFIED | `strategy.ts:63-86` — `RANK` table with all 11 strings exact; `"Hmmm...."`: 6 at line 68; `rankProbability` uses `?? 0` for unknown→worst; `strategy.test.ts:112-157` — `it.each` over all 11 labels, explicit four-dot test, never-throw asserts; 116 tests green |
+| 2 | Given a mixed board, the chosen ad is best by EV (`reward × rank`) after filtering expired/sub-floor/unhandled-encryption ads with expiry-aware tiebreak; empty/all-risky board yields defined fallback, not a crash | VERIFIED | `strategy.ts:107-191` — `filterEligibleAds` + `isAttemptable` + `expectedValue` + `preferAd` + `chooseAd` with fallback and null signal; `strategy.test.ts:273-447` — EV beats raw reward, tiebreak, least-bad gamble, empty/encrypted/expired boards return null, never-throw, non-mutation all proven |
+| 3 | Applying a solve result and applying a buy result each merge into game state correctly — solve omits `level`, buy omits `score` — without clobbering the missing field | VERIFIED | `strategy.ts:261-298` — `applySolveResult` spreads state then overrides SolveResult fields (carries `level` forward); `applyBuyResult` spreads state then overrides BuyResult fields (carries `score`/`highScore` forward); `strategy.test.ts:628-769` — carry-forward, WR-02 seam-reachability, and non-mutation tests all pass; `types.ts:123` + `api.ts:209-216` confirm seam is symmetric |
+| 4 | Bot decides to buy `hpot` when lives are low and gold allows; only buys level-raising upgrade from surplus gold after reserving healing buffer | VERIFIED | `strategy.ts:223-248` — `chooseShopPurchase` heals when `lives < MAX_LIVES_TO_KEEP(3)` and `Number.isFinite(cost) && cost <= gold`; upgrade branch gated on healthy lives only; `HEAL_BUFFER_GOLD(100)` reserve enforced; priciest affordable non-hpot selected; `strategy.test.ts:449-626` — 20 shop tests including live-cost proof and NaN-cost degradation all pass |
+| 5 | Strategy test suite covers all of the above and runs fast and deterministically with no mocks and no network (inputs are plain objects) | VERIFIED | `npx vitest run` → 116 tests, 4 suites, 180ms, all green; `strategy.test.ts` uses only plain object fixture builders (baseAd/baseState/shopItem/baseSolve/baseBuy); zero FakeApiClient/mocks/network; `strategy.ts` imports only `./types.js` via `import type` |
 
 **Score:** 5/5 truths verified
+
+---
+
+### WR Gap Items — Closure Verification
+
+| Gap | Status | Code Evidence |
+|-----|--------|---------------|
+| WR-01: non-finite reward dropped in BOTH primary filter AND fallback (lock-step) | VERIFIED | `strategy.ts:124-126` — `isAttemptable` predicate: `ad.expiresIn > 0 && !ad.encrypted && Number.isFinite(ad.reward)`; `strategy.ts:109` — `filterEligibleAds` calls `isAttemptable(ad)` (primary); `strategy.ts:190` — `chooseAd` fallback calls `ads.filter(isAttemptable)` (same predicate, lock-step via shared function); `grep -v '^ *\*' src/strategy.ts \| grep -c "Number.isFinite"` = 3; tests at `strategy.test.ts:245-270` and `413-431` prove NaN/Infinity excluded, negative-finite kept |
+| WR-03: Number.isFinite(item.cost) in BOTH heal lookup and upgrade filter | VERIFIED | `strategy.ts:228` — heal: `Number.isFinite(healingPotion.cost) && healingPotion.cost <= state.gold`; `strategy.ts:238` — upgrade: `Number.isFinite(item.cost)` in `affordableUpgrades` filter; tests at `strategy.test.ts:562-610` prove NaN hpot returns null, -Infinity hpot returns null (not a free heal), -Infinity upgrade excluded, finite upgrade wins over -Infinity co-present upgrade |
+| WR-02: ApiClient.buy() returns Promise<BuyResult>; api.ts has no score:0 placeholders; applyBuyResult reachable | VERIFIED | `types.ts:123` — `buy(gameId: string, itemId: string): Promise<BuyResult>`; `api.ts:209-216` — `HttpApiClient.buy()` returns `this.request("POST", path, buySchema, { retry: false })` with return type `Promise<BuyResult>`; `grep -c "score: 0" src/api.ts` = 0; `fake-api-client.ts:45` — `buy?: Source<[gameId: string, itemId: string], BuyResult>`; `fake-api-client.ts:84` — `async buy(...): Promise<BuyResult>`; `fake-api-client.ts:129` — `K extends "buy" ? BuyResult`; seam-reachability regression at `strategy.test.ts:728-751` proves `applyBuyResult(prior{score:700,highScore:900}, rawBuyResult)` yields score:700/highScore:900 preserved |
+
+---
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/strategy.ts` | Rank lookup table, PROBABILITY_FLOOR_RANK, rankProbability, filterEligibleAds, chooseAd, chooseShopPurchase, applySolveResult, applyBuyResult | VERIFIED | 262 lines (>40 min); exports all 6 functions; contains PROBABILITY_FLOOR_RANK, HEAL_BUFFER_GOLD, MAX_LIVES_TO_KEEP; only imports `./types.js` via `import type` |
-| `src/strategy.test.ts` | Table-driven rank tests (all 11 labels + unknown) and all subsequent test suites, plain-object fixtures, no mocks | VERIFIED | 646 lines (>60 min); imports all 6 exported functions; fixture builders: baseAd, baseState, shopItem, baseSolve, baseBuy; "Hmmm...." literal present at lines 120, 135, 167, 213, 253, 390 |
+| `src/strategy.ts` | Pure decision core: all 6 exports, imports only types.js | VERIFIED | 299 lines; single `import type` from `./types.js`; exports `rankProbability`, `filterEligibleAds`, `chooseAd`, `chooseShopPurchase`, `applySolveResult`, `applyBuyResult`; `PROBABILITY_FLOOR_RANK=6`, `MAX_LIVES_TO_KEEP=3`, `HEAL_BUFFER_GOLD=100`; `Number.isFinite` in 3 non-comment sites; `...state` spread in 2 merge helpers; no fetch/zod/pino/api.js import |
+| `src/strategy.test.ts` | Table-driven tests for all strategy functions, plain objects only | VERIFIED | 770 lines; imports all 6 functions from `./strategy.js`; imports types via `import type ./types.js`; fixture builders: `baseAd`, `baseState`, `shopItem`, `baseSolve`, `baseBuy`; no mocks, no FakeApiClient, no network |
+| `src/types.ts` | `ApiClient.buy()` returns `Promise<BuyResult>` | VERIFIED | Line 123: `buy(gameId: string, itemId: string): Promise<BuyResult>`; JSDoc at lines 113-116 states buy returns raw BuyResult for `applyBuyResult` folding, symmetric with `solve()` |
+| `src/api.ts` | `HttpApiClient.buy()` returns raw BuyResult, no placeholders | VERIFIED | Lines 209-216: `return this.request("POST", path, buySchema, { retry: false })`; return type `Promise<BuyResult>`; `grep -c "score: 0" src/api.ts` = 0 |
+| `src/fake-api-client.ts` | FakeApiScript.buy + buy() method + SourceReturn all typed BuyResult | VERIFIED | Line 45: `buy?: Source<[gameId: string, itemId: string], BuyResult>`; line 84: `async buy(...): Promise<BuyResult>`; line 129: `K extends "buy" ? BuyResult`; `GameState` usage confined to `startGame` |
+
+---
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `src/strategy.ts` | `src/types.js` | `import type { Ad, BuyResult, GameState, ShopItem, SolveResult }` | VERIFIED | Line 42: `import type { Ad, BuyResult, GameState, ShopItem, SolveResult } from "./types.js"` — exact pattern confirmed |
-| `src/strategy.test.ts` | `src/strategy.js` | named import of all 6 functions | VERIFIED | Lines 2-9: imports applyBuyResult, applySolveResult, chooseAd, chooseShopPurchase, filterEligibleAds, rankProbability from `./strategy.js` |
-| `src/strategy.ts chooseAd` | `rankProbability + filterEligibleAds (Plan 01)` | reuses rank table and floor filter | VERIFIED | `grep -c "const RANK" src/strategy.ts` = 1 (no duplication); chooseAd calls filterEligibleAds directly at line 160 |
-| `src/strategy.ts applyBuyResult` | `BuyResult` type | spread-merge `...state` carrying score/highScore forward | VERIFIED | `grep -c '\.\.\.state' src/strategy.ts` = 2 (one per merge helper); BuyResult parameter typed correctly |
+| `strategy.ts` | `./types.js` | `import type { Ad, BuyResult, GameState, ShopItem, SolveResult }` | WIRED | Line 45; single type-only import; no runtime imports from any other module |
+| `strategy.test.ts` | `./strategy.js` | named imports of all 6 functions | WIRED | Lines 2-9: all 6 exports imported |
+| `api.ts HttpApiClient.buy` | `BuyResult` via `buySchema` | `return this.request(POST, path, buySchema, { retry: false })` | WIRED | Lines 215-216; `buySchema` at lines 142-148 validates raw 5-field BuyResult |
+| `fake-api-client.ts buy` | `BuyResult` | `SourceReturn<"buy"> = BuyResult` in mapped type | WIRED | Line 129; `buy()` return type at line 84 is `Promise<BuyResult>` |
+| `filterEligibleAds` + `chooseAd` fallback | `isAttemptable` shared predicate | both paths call same function | WIRED | Lock-step: `filterEligibleAds` at line 109, fallback at line 190; floor is provably the ONLY relaxed constraint |
+
+---
 
 ### Data-Flow Trace (Level 4)
 
-Not applicable — `strategy.ts` is a pure functional module with no I/O, no state store, and no data fetching. All inputs are passed as function arguments (plain objects). There is no "data source" to trace — the data flows from the caller (Phase 3 runner, which does not yet exist) into these functions as plain objects.
+Not applicable — `strategy.ts` is a pure function module with no I/O, no data fetching, and no state storage. All inputs are passed as arguments (plain objects from the caller); all outputs are return values. No Level 4 trace required.
+
+---
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| rankProbability("Hmmm....") === 6 | `npx vitest run src/strategy.test.ts` (test at line 133-136) | 68/68 pass | PASS |
-| chooseAd selects by EV not raw reward | Test at line 248-255: A(reward=200,rank=10,EV=2000) vs B(reward=300,rank=6,EV=1800) — A wins | 68/68 pass | PASS |
-| applyBuyResult preserves prior score from GameState | Test at line 620-627: prior score:700 survives BuyResult merge | 68/68 pass | PASS |
-| Full project suite passes with no regressions | `npx vitest run` | 105/105 pass across 4 files | PASS |
-| TypeScript typecheck clean | `npx tsc --noEmit` | exit 0, no output | PASS |
-| Biome lint/format clean | `npx biome check src/strategy.ts src/strategy.test.ts` | "No fixes applied" | PASS |
+| All 116 tests pass (no regressions vs prior 105) | `npx vitest run` | 116 passed (4 files), 180ms | PASS |
+| TypeScript compiles clean | `npx tsc --noEmit` | exit 0, no output | PASS |
+| Biome lint/format clean | `npx biome check src/` | "No fixes applied", exit 0 | PASS |
+| strategy.ts imports only types.js | `grep -v '^ *\*' src/strategy.ts \| grep -cE "(fetch\|from \"zod\"\|from \"pino\"\|api\.js\|fake-api-client)"` | 0 | PASS |
+| Number.isFinite in 3+ non-comment sites | `grep -v '^ *\*' src/strategy.ts \| grep -c "Number.isFinite"` | 3 | PASS |
+| score:0 placeholder removed from api.ts | `grep -c "score: 0" src/api.ts` | 0 | PASS |
+| buy signature returns BuyResult in types.ts | `grep -q "buy(gameId: string, itemId: string): Promise<BuyResult>" src/types.ts` | match found | PASS |
+| RANK table defined exactly once | `grep -c "const RANK" src/strategy.ts` | 1 | PASS |
+| applyBuyResult uses ...state spread (2 helpers) | `grep -c "\.\.\.state" src/strategy.ts` | 2 | PASS |
+
+---
+
+### Probe Execution
+
+Step 7c: SKIPPED — no `scripts/*/tests/probe-*.sh` files exist; phase is a pure TDD module (no CLI, no server, no build pipeline probes declared).
+
+---
 
 ### Requirements Coverage
 
-| Requirement | Source Plan | Description | Status | Evidence |
-|-------------|-------------|-------------|--------|----------|
-| STRAT-01 | 02-01 | Probability string to rank mapping, unknown ranks worst, never throws | SATISFIED | `rankProbability` + RANK table in strategy.ts:60-83; 16 rank tests |
-| STRAT-02 | 02-01 | Filter out ineligible ads (expired, sub-floor, unhandled encryption) | SATISFIED | `filterEligibleAds` in strategy.ts:99-106; 14 filter tests |
-| STRAT-03 | 02-02 | Select best ad by EV with expiry tiebreak, fallback, null for empty | SATISFIED | `chooseAd` in strategy.ts:159-168; 14 chooseAd tests |
-| STRAT-04 | 02-03 | Buy hpot when lives low and gold allows | SATISFIED | `chooseShopPurchase` heal branch in strategy.ts:193-201; 6 heal-policy tests + live-cost proof |
-| STRAT-05 | 02-03 | Buy upgrades from surplus after reserving healing buffer | SATISFIED | Upgrade branch in strategy.ts:203-213 gated on healthy lives + HEAL_BUFFER_GOLD; 4 upgrade tests |
-| STRAT-06 | 02-04 | Merge solve/buy results into state without clobbering omitted fields | SATISFIED | `applySolveResult` + `applyBuyResult` in strategy.ts:227-262; 8 merge tests |
-| TEST-01 | 02-01..04 | Core logic built test-first, fast deterministic unit tests, no live network | SATISFIED | 68 tests in 127ms, plain-object fixtures, no mocks, no network, RED→GREEN sequence in git history (10 commits) |
+| Requirement | Source Plan(s) | Description | Status | Evidence |
+|-------------|---------------|-------------|--------|---------|
+| STRAT-01 | 02-01 | Probability string to rank via exact-string lookup; unknown ranks worst, never throws | SATISFIED | `strategy.ts:63-86`; 11 table-driven tests + four-dot explicit test + never-throw asserts at `strategy.test.ts:112-157` |
+| STRAT-02 | 02-01 | Filter ineligible ads: expired, below floor, unhandled encryption | SATISFIED | `strategy.ts:107-126`; filter tests at `strategy.test.ts:160-271` including non-finite reward cases |
+| STRAT-03 | 02-02, 02-05 | Select best ad by EV with expiry-aware tiebreak; WR-01 non-finite hardening | SATISFIED | `strategy.ts:128-191`; EV/tiebreak/fallback/empty/NaN tests at `strategy.test.ts:273-447` |
+| STRAT-04 | 02-03, 02-05 | Buy hpot when lives low and gold allows; WR-03 non-finite cost hardening | SATISFIED | `strategy.ts:223-248`; heal policy + live-cost proof + NaN-cost degradation tests at `strategy.test.ts:457-498, 562-611` |
+| STRAT-05 | 02-03 | Buy level-raising upgrade from surplus only after reserving healing buffer | SATISFIED | `strategy.ts:234-247`; upgrade buffer, priciest-affordable, and ordering tests at `strategy.test.ts:500-543` |
+| STRAT-06 | 02-04, 02-05 | Merge solve/buy responses correctly — solve omits `level`, buy omits `score`; WR-02 buy seam symmetry | SATISFIED | `strategy.ts:261-298`; carry-forward + WR-02 seam-reachability + non-mutation tests at `strategy.test.ts:628-769`; `types.ts:123` + `api.ts:209-216` confirm seam is symmetric |
+| TEST-01 | All plans | Core logic built test-first; fast deterministic unit tests, no live network | SATISFIED | 116 tests in 180ms; plain-object fixtures throughout; `strategy.ts` imports only types |
 
-All 7 phase-2 requirements satisfied.
+**All 7 phase-2 requirements (STRAT-01..06, TEST-01) are SATISFIED.**
+
+---
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
-|------|------|---------|----------|--------|
-| `src/strategy.ts` | 247-248 | Word "placeholder" in JSDoc comment | Info | Not a code stub — the word "placeholder" appears in a doc-comment explaining what api.ts buy() does with score:0. The code itself is fully implemented. Not a blocker. |
-| `src/strategy.test.ts` | 37, 98, 620 | Word "placeholder" in comments/test description | Info | Same — documentation references to the api.ts behavior being guarded against. Not a stub. |
+|------|------|---------|---------|--------|
+| `src/strategy.ts` | 16-17 | Stale plan-progress comment: "This file grows across plans 02-01..02-04 … Plan 02-04 completes the core" — omits the 02-05 gap-closure pass that added `isAttemptable` and finite guards | Info (IN-01 from 02-REVIEW.md) | No correctness impact; minor doc/history inaccuracy |
+| `src/strategy.ts` | 98-102, 116-117, 213-217 | WR-01/WR-03 guards documented as protecting against "failed coercion yields NaN" — factually incorrect; zod 4 `z.coerce.number()` rejects non-finite inputs and `z.number()` rejects NaN/Infinity, so the boundary cannot emit non-finite values; guards are correct defense-in-depth but the rationale is inaccurate | Warning (WR-01 from 02-REVIEW.md) | No correctness impact; will mislead maintainers about boundary behavior |
+| `src/strategy.ts` | 128-151 | `expectedValue` can overflow finite `reward × rank` to Infinity for very large (but finite) rewards; `preferAd` would then see `Infinity - Infinity = NaN`, the exact fallthrough WR-01 claims to prevent — not reachable through the live Mugloar API (rewards are small gold values) | Warning (WR-02 from 02-REVIEW.md) | Not a live risk; internal inconsistency between the WR-01 narrative and what the guard actually covers |
+| `src/types.ts` | 52, 62 | `Ad.reward: number` and `ShopItem.cost: number` typed as bare `number` (which includes NaN/Infinity in TypeScript); comments do not state the boundary-enforced finiteness that zod actually guarantees | Warning (WR-03 from 02-REVIEW.md) | Contract/clarity gap only; no crash risk |
 
-No TBD, FIXME, or XXX markers found in either file. No empty implementations. No return null/return {}/return [] stubs found in any export. No hardcoded shop cost literals in decision logic (verified by grep).
+No TBD/FIXME/XXX markers found in any phase file. No placeholder return values in any export. No hardcoded shop cost literals in decision logic. No debt marker blockers.
 
-### Human Verification Required
+The three warnings and four info findings from 02-REVIEW.md are advisory quality items as noted in the verification instructions. None constitute a must-have failure:
 
-#### 1. WR-02 Seam Contract — applyBuyResult vs ApiClient.buy() return type
-
-**Test:** Before Phase 3 planning begins, review the mismatch between `applyBuyResult(state, result: BuyResult): GameState` and `ApiClient.buy(...): Promise<GameState>`. Decide one of:
-  (a) Change `ApiClient.buy()` signature to return `Promise<BuyResult>`, letting the runner call `applyBuyResult` with the raw result; or
-  (b) Document the intended Phase 3 wiring explicitly (e.g. the runner must use a different merge path or bypass `applyBuyResult` because buy() already merges internally); or
-  (c) Remove the `score:0` placeholder from `api.ts buy()` so the GameState it returns already carries the correct score (eliminating the need for a separate merge).
-
-**Expected:** One of the three options is selected and the Phase 3 plan explicitly documents how buy results flow into game state without silently zeroing the score.
-
-**Why human:** The strategy module is internally consistent and all 68 tests pass. The `applyBuyResult` function correctly carries score/highScore forward from the prior state when given a raw `BuyResult`. The problem is an inter-module contract gap: `ApiClient.buy()` (types.ts:122) returns `Promise<GameState>`, not `Promise<BuyResult>`. The concrete `api.ts buy()` (lines 209-225) already folds the buy result into a GameState with `score: 0, highScore: 0` placeholders. A Phase 3 runner cannot call `applyBuyResult` with the output of `api.buy()` because the types don't match (`GameState` is not assignable to `BuyResult`). This means `applyBuyResult` is currently unreachable from the only wiring path that exists — the seam contract is inconsistent with the helper's signature. The code review (WR-02) flagged this exactly. The fix requires a human decision about which side of the seam to change, and that decision must be made before Phase 3 plan is written, otherwise the score-protect logic is dead code. Automated checks cannot detect this; it requires reading the Phase 3 integration intent.
-
-### Gaps Summary
-
-No automated verification gaps. All 5 must-haves are VERIFIED. All 7 requirement IDs (STRAT-01..06, TEST-01) are SATISFIED. The test suite runs 68/68 pass, typecheck is clean, Biome reports no issues, no debt markers exist, and no stubs are present.
-
-The `human_needed` status is due to a latent inter-phase seam issue (WR-02 from the code review): `applyBuyResult` is the correct implementation for its intended contract, but `ApiClient.buy()` returns `GameState`, not `BuyResult`, making `applyBuyResult` unreachable through the injected seam without a type mismatch. This is not a gap in the Phase 2 goal (all pure decision logic is correct), but it is a wiring hazard that Phase 3 must explicitly resolve before the runner can correctly protect the score.
+- The WR-01/WR-03 guards are present and behaviorally correct — only their rationale comments are inaccurate
+- The overflow-EV gap is not reachable through the live Mugloar API
+- The `Number.isFinite` count (3) and `...state` spread count (2) match plan acceptance criteria exactly
 
 ---
 
-_Verified: 2026-06-09T16:47:55Z_
+### Human Verification Required
+
+None. The previously `human_needed` WR-02 item is fully resolved by code inspection:
+
+- `types.ts:123` declares `buy(): Promise<BuyResult>`
+- `api.ts:209-216` returns the raw validated `BuyResult` directly with no GameState construction and no score:0 placeholders
+- `fake-api-client.ts:45/84/129` all typed `BuyResult`
+- `strategy.test.ts:728-751` — WR-02 seam-reachability regression test proves `applyBuyResult(prior{score:700,highScore:900}, rawBuyResult)` yields score:700/highScore:900 preserved and gold/lives/level/turn updated
+
+No visual appearance, user flow, real-time behavior, or external service integration questions remain.
+
+---
+
+### Gaps Summary
+
+No gaps. All 5 ROADMAP success criteria verified, all 7 requirements (STRAT-01..06, TEST-01) satisfied, all three hard gates green (116 tests pass, `tsc --noEmit` exit 0, biome clean with no fixes). The WR-01/WR-02/WR-03 gap items from the previous `human_needed` verification are confirmed closed in code.
+
+The 3 warnings and 4 info findings from the code review are documented above as advisory quality items. They do not block the phase goal and none is a must-have failure.
+
+---
+
+_Verified: 2026-06-09T18:10:00Z_
 _Verifier: Claude (gsd-verifier)_
+_Re-verification after gap closure plan 02-05_

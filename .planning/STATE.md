@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-09T14:53:39.683Z"
+status: ready_to_plan
+last_updated: 2026-06-09T15:08:22.444Z
 last_activity: 2026-06-09
 progress:
   total_phases: 4
@@ -11,6 +11,7 @@ progress:
   total_plans: 9
   completed_plans: 9
   percent: 50
+stopped_at: Phase 02 complete (5/5) — ready to discuss Phase 3
 ---
 
 # Project State
@@ -20,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-09)
 
 **Core value:** The bot autonomously plays a full game of Dragons of Mugloar to completion and reports its final score — driven by a simple, correct, well-tested decision loop.
-**Current focus:** Phase 02 — strategy-core-pure-decision-logic-tdd
+**Current focus:** Phase 3 — game loop & shop integration
 
 ## Current Position
 
-Phase: 02 (strategy-core-pure-decision-logic-tdd) — COMPLETE
-Plan: 5 of 5 (all plans complete, incl. 02-05 gap closure)
-Status: Phase 02 complete — ready for verification / transition
-Last activity: 2026-06-09 -- Completed 02-05-PLAN.md (WR-01/WR-02/WR-03 gap closure)
+Phase: 3
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-09
 
 Progress: [██████████] 100%
 
@@ -35,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 4
+- Total plans completed: 9
 - Average duration: -
 - Total execution time: -
 
@@ -44,6 +45,7 @@ Progress: [██████████] 100%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 4 | - | - |
+| 02 | 5 | - | - |
 
 **Recent Trend:**
 
