@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-09T14:30:01.610Z"
-last_activity: 2026-06-09 -- Phase 02 planning complete
+last_updated: "2026-06-09T14:53:39.683Z"
+last_activity: 2026-06-09
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
-  completed_plans: 8
-  percent: 25
+  completed_plans: 9
+  percent: 50
 ---
 
 # Project State
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 
 ## Current Position
 
-Phase: 02 (strategy-core-pure-decision-logic-tdd) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-06-09 -- Phase 02 planning complete
+Phase: 02 (strategy-core-pure-decision-logic-tdd) — COMPLETE
+Plan: 5 of 5 (all plans complete, incl. 02-05 gap closure)
+Status: Phase 02 complete — ready for verification / transition
+Last activity: 2026-06-09 -- Completed 02-05-PLAN.md (WR-01/WR-02/WR-03 gap closure)
 
 Progress: [██████████] 100%
 
@@ -59,6 +59,7 @@ Progress: [██████████] 100%
 | Phase 02 P02 | 2min | 2 tasks | 2 files |
 | Phase 02 P03 | 2min | 2 tasks | 2 files |
 | Phase 02 P04 | 3min | 2 tasks tasks | 2 files files |
+| Phase 02 P05 | 6min | 4 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 2 (02-03): upgrade reserves HEAL_BUFFER_GOLD=100 (cost <= gold - 100) and picks the priciest affordable non-hpot via reduce (D-10/D-11); all costs read LIVE from the shop (no hardcoded 50/100/300), proven by a 70-cost-hpot test that does not heal at gold 60
 - [Phase 02]: Phase 2 (02-04): two pure merge helpers applySolveResult/applyBuyResult complete the decision core (D-12) — spread the prior state first then override only result-provided fields, so a solve carries level forward and a buy carries score/highScore forward
 - [Phase 02]: Phase 2 (02-04): applyBuyResult consumes the RAW BuyResult (not api.ts's partial GameState), so the api.ts score:0/highScore:0 placeholder can never reach the threaded final score; strategy.ts is now feature-complete (STRAT-01..06), still types-only import
+- [Phase 02]: Phase 2 (02-05): WR-02 resolved via option (a) — ApiClient.buy() returns Promise<BuyResult> symmetric with solve(); api.ts score:0/highScore:0 placeholders deleted, applyBuyResult is the only score-merge path
+- [Phase 02]: Phase 2 (02-05): WR-01/WR-03 hardening — Number.isFinite guards drop non-finite reward (shared isAttemptable predicate, lock-step primary+fallback) and treat non-finite cost as unaffordable (heal+upgrade), degrading without throwing
 
 ### Pending Todos
 
@@ -111,6 +114,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T13:40:30.352Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-06-09T14:52:35.756Z
+Stopped at: Completed 02-05-PLAN.md (Phase 02 gap closure — WR-01/WR-02/WR-03)
 Resume file: None
