@@ -41,7 +41,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — decodeAd (TDD): cross-field Base64/ROT13 decode, all-three-fields-or-none
+- [x] 01-02-PLAN.md — decodeAd (TDD): cross-field Base64/ROT13 decode, all-three-fields-or-none
 - [ ] 01-03-PLAN.md — FakeApiClient: scripted offline test double implementing ApiClient
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation — Types, API Client & Test Seam | 1/4 | In Progress|  |
+| 1. Foundation — Types, API Client & Test Seam | 2/4 | In Progress|  |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 0/TBD | Not started | - |
 | 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |

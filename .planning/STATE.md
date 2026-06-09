@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-09T09:03:01.875Z"
+last_updated: "2026-06-09T09:08:49.367Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 ## Current Position
 
 Phase: 01 (foundation-types-api-client-test-seam) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-06-09
 
-Progress: [███░░░░░░░] 25%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [███░░░░░░░] 25%
 
 *Updated after each plan completion*
 | Phase 01 P01-01 | 5 | 3 tasks | 5 files |
+| Phase 01 P01-02 | 2 | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,7 @@ Recent decisions affecting current work:
 - Phase 2: TDD coverage (TEST-01) attaches here, where the bulk of testable logic lands; no separate test-only phase.
 - [Phase ?]: Phase 1: ApiClient interface defined as the injectable TDD seam in types.ts; consumers depend on the interface, never on fetch.
 - [Phase ?]: Phase 1: Pinned TypeScript to ~5.9 (5.9.3); TS 6.0 excluded per CLAUDE.md. Ad.probability is free-text string and Ad.encrypted is optional number (D-02).
+- [Phase ?]: Phase 1 (01-02): decodeAd is a separate pure step from zod (D-03); decodes all three fields or none (D-08/D-09); Base64 guarded by regex + length + round-trip re-encode to defeat Buffer.from leniency; cleared flag is 0.
 
 ### Pending Todos
 
@@ -89,6 +91,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T09:02:26.942Z
+Last session: 2026-06-09T09:08:40.212Z
 Stopped at: Phase 1 context gathered
 Resume file: None
