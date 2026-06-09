@@ -559,6 +559,54 @@ describe("chooseShopPurchase (STRAT-04 / STRAT-05)", () => {
     });
   });
 
+  describe("non-finite cost hardening (WR-03)", () => {
+    it("does NOT fire the heal when the live hpot cost is NaN (degrade to null, never throw)", () => {
+      // `ShopItem.cost` flows from the same wire-string boundary as `reward`; a
+      // failed coercion yields NaN. A NaN hpot cost must be treated as
+      // unaffordable so the heal cleanly degrades to null rather than silently
+      // never-firing in a way that masquerades as "nothing to buy".
+      const nanHpot = shopItem("hpot", Number.NaN, "Healing potion");
+      const state = baseState({ lives: 1, gold: 500 });
+
+      expect(() => chooseShopPurchase(state, [nanHpot, cs, ch])).not.toThrow();
+      expect(chooseShopPurchase(state, [nanHpot, cs, ch])).toBeNull();
+    });
+
+    it("does NOT fire the heal when the live hpot cost is -Infinity (non-finite is unaffordable)", () => {
+      // A non-finite cost — even one that compares as `<= gold` (e.g. -Infinity)
+      // must be treated as unaffordable, NOT as a free heal. Without the finite
+      // guard `-Infinity <= gold` is true and the heal would wrongly fire.
+      const negInfHpot = shopItem("hpot", Number.NEGATIVE_INFINITY, "Healing potion");
+      const decision = chooseShopPurchase(baseState({ lives: 1, gold: 500 }), [negInfHpot, cs, ch]);
+
+      expect(decision).toBeNull();
+    });
+
+    it("excludes a single non-finite-cost upgrade even when it compares as affordable", () => {
+      // A -Infinity-cost upgrade satisfies `cost <= gold - HEAL_BUFFER_GOLD`, so
+      // without the finite guard it would be a free upgrade. It must be excluded;
+      // with no other affordable upgrade, nothing is bought.
+      const negInfUpgrade = shopItem("cs", Number.NEGATIVE_INFINITY, "Claw Sharpening");
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 1000 }), [hpot, negInfUpgrade]);
+
+      expect(decision).toBeNull();
+    });
+
+    it("chooses a finite affordable upgrade over a co-present non-finite-cost upgrade", () => {
+      // A -Infinity-cost upgrade passes the raw affordability comparison but must
+      // be excluded; the finite affordable upgrade is the only valid pick.
+      const negInfUpgrade = shopItem("nan-up", Number.NEGATIVE_INFINITY, "Mystery upgrade");
+      const finiteUpgrade = shopItem("cs", 100, "Claw Sharpening");
+      const decision = chooseShopPurchase(baseState({ lives: 3, gold: 1000 }), [
+        hpot,
+        negInfUpgrade,
+        finiteUpgrade,
+      ]);
+
+      expect(decision?.id).toBe("cs");
+    });
+  });
+
   describe("purity (D-08..D-11)", () => {
     it("does not throw and does not mutate the state or the shop list", () => {
       const state = baseState({ lives: 3, gold: 500 });
