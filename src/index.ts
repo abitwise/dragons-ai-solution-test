@@ -144,10 +144,16 @@ async function main(): Promise<void> {
   // The ONLY place the real pair is constructed (success criterion #3). The base
   // URL is owned by api.ts (non-www default + MUGLOAR_BASE_URL); index.ts never
   // re-reads or duplicates it.
+  // The logger must be built OUTSIDE the try so the catch can use it; its
+  // construction is guarded by the launch-site `.catch` (WR-01) below.
   const logger = createConsoleLogger(level);
-  const api = new HttpApiClient();
 
   try {
+    // Construct the client INSIDE the try so a constructor throw (it reads
+    // process.env and runs a regex .replace) is caught by the existing handler
+    // and mapped to a deterministic exit, rather than escaping as an unhandled
+    // rejection that bypasses the D-08 exit-code contract (WR-01).
+    const api = new HttpApiClient();
     const report: GameReport = await playGame(api, logger);
     printBanner(report);
     process.exitCode = exitCodeForReason(report.reason); // 0 = game-over, 1 = guard stop.
@@ -164,4 +170,12 @@ async function main(): Promise<void> {
   // No process.exit(): returning drains the sync pretty stream + stdout fully.
 }
 
-void main();
+// Launch with a rejection handler so ANY escape from `main` — most notably a
+// throw during `createConsoleLogger` (built OUTSIDE main's try so the catch can
+// use it) — maps to a deterministic exit 2 instead of an unhandled rejection
+// with a non-deterministic exit code, preserving the D-08 contract (WR-01).
+void main().catch((err) => {
+  const message = err instanceof Error ? err.message : String(err);
+  process.stdout.write(`\nRun failed during startup: ${message}\n`);
+  process.exitCode = 2;
+});
