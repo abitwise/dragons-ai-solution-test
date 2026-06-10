@@ -26,15 +26,17 @@
  */
 
 import { parseArgs } from "node:util";
-import { END } from "./runner.js";
+import { HttpApiClient } from "./api.js";
+import { createConsoleLogger } from "./logger.js";
+import { END, playGame } from "./runner.js";
+import type { GameReport } from "./types.js";
 
 /**
  * The closed set of valid pino levels (house `const`/Set style — a string-set
  * vocabulary, never a TS keyword-vocab). An untrusted `--log-level`/`LOG_LEVEL`
  * value is validated against THIS set; an unknown value is rejected and falls
- * through to env/default, so a
- * bogus value can never crash the logger or silently disable all output
- * (security T-04-03).
+ * through to env/default, so a bogus value can never crash the logger or
+ * silently disable all output (security T-04-03).
  */
 const PINO_LEVELS = new Set(["trace", "debug", "info", "warn", "error", "fatal", "silent"]);
 
@@ -87,3 +89,79 @@ export function resolveLogLevel(argv: string[], env: NodeJS.ProcessEnv): string 
 export function exitCodeForReason(reason: string): 0 | 1 {
   return reason === END.GAME_OVER ? 0 : 1;
 }
+
+/**
+ * Print the always-visible FINAL SCORE summary (D-07). It writes a bordered
+ * block straight to `process.stdout` — deliberately BYPASSING pino — so the
+ * final score is shown regardless of the resolved log level (even at `silent`).
+ * Only the typed `GameReport` fields (`score`/`turns`/`reason`) are printed; no
+ * untrusted API string and no secret reaches this banner (T-04-05).
+ */
+function printBanner(report: GameReport): void {
+  const rows = [
+    `  FINAL SCORE : ${report.score}`,
+    `  TURNS PLAYED: ${report.turns}`,
+    `  END REASON  : ${report.reason}`,
+  ];
+  const width = Math.max(...rows.map((r) => r.length)) + 2;
+  const border = `+${"-".repeat(width)}+`;
+  const body = rows.map((r) => `|${r.padEnd(width)}|`).join("\n");
+  process.stdout.write(`\n${border}\n${body}\n${border}\n`);
+}
+
+/**
+ * Resolve the log level WITHOUT letting a bad CLI flag crash the process. In
+ * `strict` mode `parseArgs` THROWS on an unknown flag (T-04-04); we catch that
+ * here and degrade to the default `info` level so the logger can always be
+ * constructed exactly ONCE below. A flag error is non-fatal for verbosity — the
+ * run still proceeds and any REAL failure (transport/boundary) is what drives
+ * the exit-2 path in `main`'s catch.
+ */
+function safeResolveLogLevel(): string {
+  try {
+    return resolveLogLevel(process.argv.slice(2), process.env);
+  } catch {
+    return "info";
+  }
+}
+
+/**
+ * The composition root: construct the real pair, run one game, print the
+ * banner, and map the outcome to an exit code. This is the ONLY place
+ * `HttpApiClient` + `ConsoleLogger` are constructed (success criterion #3) and
+ * the SINGLE authoritative try/catch (D-09) that `runner.ts` deliberately omits.
+ *
+ * The level is resolved (degrading on a bad flag) BEFORE the try so the logger
+ * is built exactly once and is available to the catch's `logger.error`.
+ *
+ * Exit codes (D-08): 0 = natural game-over, 1 = guard stop (TURN_CAP /
+ * NO_PROGRESS), 2 = ANY thrown Transport/BoundaryError. It sets
+ * `process.exitCode` and RETURNS — it NEVER calls `process.exit()` — so Node
+ * drains the synchronous pretty stream + the stdout banner fully before exiting.
+ */
+async function main(): Promise<void> {
+  const level = safeResolveLogLevel();
+  // The ONLY place the real pair is constructed (success criterion #3). The base
+  // URL is owned by api.ts (non-www default + MUGLOAR_BASE_URL); index.ts never
+  // re-reads or duplicates it.
+  const logger = createConsoleLogger(level);
+  const api = new HttpApiClient();
+
+  try {
+    const report: GameReport = await playGame(api, logger);
+    printBanner(report);
+    process.exitCode = exitCodeForReason(report.reason); // 0 = game-over, 1 = guard stop.
+  } catch (err) {
+    // ANY thrown Transport/BoundaryError → exit 2 (D-08). The untrusted message
+    // rides as a STRUCTURED field, never concatenated into the headline
+    // (T-04-01); it originates from our own typed Error classes.
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error("game crashed", { error: message });
+    // A clear, always-visible failure line to stdout (mirrors the banner path).
+    process.stdout.write(`\nRun failed: ${message}\n`);
+    process.exitCode = 2;
+  }
+  // No process.exit(): returning drains the sync pretty stream + stdout fully.
+}
+
+void main();
