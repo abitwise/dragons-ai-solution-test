@@ -24,7 +24,7 @@
  */
 
 import { applyBuyResult, applySolveResult, chooseAd, chooseShopPurchase } from "./strategy.js";
-import type { ApiClient, GameReport, GameState, Logger } from "./types.js";
+import type { Ad, ApiClient, GameReport, GameState, Logger } from "./types.js";
 
 /** Generous backstop; the turn-based cap (D-05). A flat turn never reaches it. */
 const MAX_TURN = 2000;
@@ -38,8 +38,15 @@ const NO_PROGRESS_LIMIT = 3;
  * Exactly THREE game-terminal reasons; there is deliberately NO `API_ERROR`
  * reason (D-10) — a thrown ApiClient error propagates as a rejected promise and
  * produces no `GameReport` at all (D-11).
+ *
+ * EXPORTED (Phase 4 Q1 → option b) so `index.ts` maps each `GameReport.reason`
+ * string to an exit code from this single source of truth (DRY/greppable),
+ * rather than re-declaring the strings. This is an additive change only — the
+ * `as const` object and its three exact strings are byte-identical, and nothing
+ * about the loop mechanics, the `playGame` signature, the guards, or the
+ * taxonomy changes.
  */
-const END = {
+export const END = {
   GAME_OVER: "game over: lives reached 0",
   TURN_CAP: "stopped: max-turn cap reached",
   NO_PROGRESS: "stopped: no-progress guard tripped",
@@ -64,6 +71,25 @@ function shouldStop(turn: number, stalls: number): StopReason {
 }
 
 /**
+ * A compact, structured DEBUG view of the candidate ads considered this turn —
+ * each ad's id, reward, probability label, and expiry. Derived ONLY from the
+ * already-fetched `ads` array (no new `strategy.ts` export, no rank-table
+ * duplication — `strategy.ts` is LOCKED). The untrusted ad `message`/encrypted
+ * text is deliberately NOT included: candidate detail rides at DEBUG and never
+ * interpolates raw API strings into the log message (T-04-01/T-04-02).
+ */
+function candidateView(
+  ads: Ad[],
+): Array<Pick<Ad, "adId" | "reward" | "probability" | "expiresIn">> {
+  return ads.map((ad) => ({
+    adId: ad.adId,
+    reward: ad.reward,
+    probability: ad.probability,
+    expiresIn: ad.expiresIn,
+  }));
+}
+
+/**
  * Drain the shop phase for one iteration (D-01/D-02), returning the updated
  * `GameState`. Repeatedly: ask `chooseShopPurchase` what to buy; if it returns an
  * item, `buy` it and fold the raw `BuyResult` via `applyBuyResult`; stop when the
@@ -71,9 +97,17 @@ function shouldStop(turn: number, stalls: number): StopReason {
  * `shoppingSuccess:false` (can't actually afford it — the guard against an
  * infinite re-buy of an unaffordable-but-recommended item). The shop is
  * re-fetched after each successful buy so the next decision sees current costs.
+ *
+ * Narration (D-05/D-06, Phase 4): the shop catalog and each fetch boundary ride
+ * at DEBUG (verbose play-by-play / never above DEBUG); a SUCCESSFUL buy narrates
+ * at INFO (a decision/outcome) and a `shoppingSuccess:false` buy at WARN (a
+ * nothing-to-do skip). Untrusted shop strings (item `name`) are passed as
+ * STRUCTURED fields, never interpolated into the message text (T-04-01).
  */
-async function drainShop(api: ApiClient, state: GameState): Promise<GameState> {
+async function drainShop(api: ApiClient, state: GameState, logger: Logger): Promise<GameState> {
   let shop = await api.getShop(state.gameId);
+  // Verbose play-by-play: the raw catalog rides ONLY at DEBUG (PITFALLS rule).
+  logger.debug("fetched shop catalog", { items: shop });
   let item = chooseShopPurchase(state, shop);
 
   while (item !== null) {
@@ -82,9 +116,29 @@ async function drainShop(api: ApiClient, state: GameState): Promise<GameState> {
     // a buy can never silently zero the reported score. Never `state = result`.
     state = applyBuyResult(state, result);
 
-    if (!result.shoppingSuccess) break; // D-02: can't afford → stop re-buying.
+    if (result.shoppingSuccess) {
+      // INFO decision/outcome: one scannable line per buy. `name` is untrusted
+      // API text — pass it as a structured field, never in the message (T-04-01).
+      logger.info("bought item", {
+        itemId: item.id,
+        name: item.name,
+        cost: item.cost,
+        gold: state.gold,
+      });
+    } else {
+      // WARN skip: the recommended item could not actually be afforded; the
+      // drain stops here rather than re-buying it forever (D-02).
+      logger.warn("buy not completed (insufficient gold)", {
+        itemId: item.id,
+        name: item.name,
+        cost: item.cost,
+        gold: state.gold,
+      });
+      break; // D-02: can't afford → stop re-buying.
+    }
 
     shop = await api.getShop(state.gameId); // re-fetch after the turn-consuming buy
+    logger.debug("re-fetched shop catalog after buy", { items: shop });
     item = chooseShopPurchase(state, shop);
   }
 
@@ -130,17 +184,43 @@ export async function playGame(api: ApiClient, logger: Logger): Promise<GameRepo
     const turnBefore = state.turn;
 
     // SHOP PHASE (D-01/D-02): drain sensible buys before the solve.
-    state = await drainShop(api, state);
+    state = await drainShop(api, state, logger);
 
     // FRESH ADS THEN SOLVE (D-03/LOOP-03): re-fetch after the turn-consuming shop
     // phase so expiresIn is current at decision time.
     const ads = await api.getMessages(state.gameId);
+    // Verbose play-by-play: the candidate ads considered this turn ride at DEBUG
+    // (never above DEBUG — keeps the default INFO run scannable, RESEARCH Pitfall 4).
+    logger.debug("fetched ads", { count: ads.length, candidates: candidateView(ads) });
     const ad = chooseAd(ads);
     if (ad !== null) {
-      // Fold the RAW SolveResult — applySolveResult carries level forward. A
-      // success:false body is normal play; the merge drops lives and we loop.
-      state = applySolveResult(state, await api.solve(state.gameId, ad.adId));
+      // INFO decision: the chosen ad (its reward + probability) before solving.
+      // `probability` is a free-text API label — pass it as a structured field,
+      // never interpolated into the message text (T-04-01).
+      logger.info("chose ad", { adId: ad.adId, reward: ad.reward, probability: ad.probability });
+
+      // Capture the RAW SolveResult so the outcome line can report the body's
+      // `success` boolean (the source of truth, NOT the HTTP status), then fold
+      // it. applySolveResult carries level forward — a success:false body is
+      // normal play; the merge drops lives and we loop (never branch on success).
+      const result = await api.solve(state.gameId, ad.adId);
+      state = applySolveResult(state, result);
+
+      // INFO outcome: the human-readable result of the solve (the body's success
+      // flag + the lives/gold/score deltas). Raw per-field detail stays at DEBUG.
+      logger.info("solve outcome", {
+        adId: ad.adId,
+        success: result.success,
+        lives: state.lives,
+        gold: state.gold,
+        score: state.score,
+      });
       logger.debug("solved ad", { adId: ad.adId, lives: state.lives, score: state.score });
+    } else {
+      // WARN skip: no eligible/solvable ad this turn (empty or all-filtered
+      // board). Nothing turn-consuming happens, so this rides into the
+      // no-progress guard (D-14) — one unified stall-termination.
+      logger.warn("no eligible ad this turn (nothing to do)", { adsSeen: ads.length });
     }
 
     // After the iteration's work: reset the stall counter when `turn` advanced
