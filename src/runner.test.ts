@@ -55,6 +55,30 @@ const logger: Logger = {
   error() {},
 };
 
+/** A single recorded log call: its LEVEL and its (non-empty) message headline. */
+interface LogCall {
+  level: "debug" | "info" | "warn" | "error";
+  message: string;
+}
+
+/**
+ * A RECORDING spy implementing the same `Logger` interface as the silent
+ * fixture above, but capturing every call's `{ level, message }` into a shared
+ * `calls[]`. It asserts the LEVEL taxonomy (D-05/D-06) WITHOUT coupling to the
+ * rendered string — wording stays free to change (PITFALLS TDD rule). Stays
+ * fully offline (no pino, no network); it is just four push closures.
+ */
+function recordingLogger(): { logger: Logger; calls: LogCall[] } {
+  const calls: LogCall[] = [];
+  const logger: Logger = {
+    debug: (message: string) => calls.push({ level: "debug", message }),
+    info: (message: string) => calls.push({ level: "info", message }),
+    warn: (message: string) => calls.push({ level: "warn", message }),
+    error: (message: string) => calls.push({ level: "error", message }),
+  };
+  return { logger, calls };
+}
+
 describe("playGame", () => {
   it("plays a full game to lives:0 and returns a GAME_OVER GameReport", async () => {
     const fake = new FakeApiClient({
@@ -376,5 +400,87 @@ describe("playGame termination & errors", () => {
     expect(report.reason).toBe(REASON.GAME_OVER);
     // Exactly one buy (the shoppingSuccess:false break stopped the drain), then play continued.
     expect(fake.calls.filter((c) => c.method === "buy")).toHaveLength(1);
+  });
+});
+
+/**
+ * Plan 04-02 — the INFO/WARN/DEBUG narration taxonomy (LOG-01, D-04/D-05/D-06).
+ * Each case drives the runner with `FakeApiClient` exactly as the happy-path
+ * tests do (zero live network, TEST-01/D-12) and asserts on the recorded LOG
+ * LEVEL — never on the rendered wording — so the level contract is pinned while
+ * the message text stays free to change (PITFALLS TDD rule).
+ */
+describe("playGame narration levels", () => {
+  it("emits an info-level call for a normal solved turn (D-05)", async () => {
+    const { logger: spy, calls } = recordingLogger();
+    const fake = new FakeApiClient({
+      startGame: [baseState()],
+      getShop: [[], []], // buys nothing both iterations
+      getMessages: [[adFixture("a1")], [adFixture("a2")]],
+      solve: [
+        solveFixture({ turn: 1 }),
+        solveFixture({ success: false, lives: 0, score: 10, turn: 2 }),
+      ],
+    });
+
+    await playGame(fake, spy);
+
+    // At least one INFO line fired (chosen ad / solve outcome are INFO), and its
+    // message is a non-empty headline string — asserting LEVEL, not wording.
+    const infoCalls = calls.filter((c) => c.level === "info");
+    expect(infoCalls.length).toBeGreaterThan(0);
+    expect(infoCalls.every((c) => typeof c.message === "string" && c.message.length > 0)).toBe(
+      true,
+    );
+  });
+
+  it("emits a warn-level call on the no-eligible-ad / empty-board path (D-14)", async () => {
+    const { logger: spy, calls } = recordingLogger();
+    const fake = new FakeApiClient({
+      startGame: [baseState()],
+      getShop: [[], []], // buys nothing
+      getMessages: [
+        [], // iter1: empty board → chooseAd null → WARN nothing-to-do
+        [adFixture("a2")], // iter2: a solvable ad drives to lives:0 so the game ends
+      ],
+      solve: [solveFixture({ success: false, lives: 0, turn: 1 })],
+    });
+
+    await playGame(fake, spy);
+
+    // The empty-board iteration narrates a WARN skip (assert the LEVEL only).
+    const warnCalls = calls.filter((c) => c.level === "warn");
+    expect(warnCalls.length).toBeGreaterThan(0);
+    expect(warnCalls.every((c) => typeof c.message === "string" && c.message.length > 0)).toBe(
+      true,
+    );
+  });
+
+  it("emits a warn-level call when a buy reports shoppingSuccess:false (D-05)", async () => {
+    const { logger: spy, calls } = recordingLogger();
+    const fake = new FakeApiClient({
+      // lives:2 (< MAX_LIVES_TO_KEEP) + gold:50 → chooseShopPurchase picks hpot;
+      // the buy reports shoppingSuccess:false → the drain WARNs then breaks.
+      startGame: [baseState({ lives: 2, gold: 50 })],
+      getShop: [
+        [{ id: "hpot", name: "Healing potion", cost: 10 }], // iter1: heal recommended
+        [], // iter2 shop phase buys nothing
+      ],
+      buy: [{ shoppingSuccess: false, gold: 50, lives: 2, level: 0, turn: 0 }],
+      getMessages: [[adFixture("a1")], [adFixture("a2")]],
+      solve: [
+        solveFixture({ lives: 2, turn: 1 }),
+        solveFixture({ success: false, lives: 0, turn: 2 }), // drives a clean end
+      ],
+    });
+
+    await playGame(fake, spy);
+
+    // The failed buy narrates a WARN (assert the LEVEL, not the wording).
+    const warnCalls = calls.filter((c) => c.level === "warn");
+    expect(warnCalls.length).toBeGreaterThan(0);
+    expect(warnCalls.every((c) => typeof c.message === "string" && c.message.length > 0)).toBe(
+      true,
+    );
   });
 });
