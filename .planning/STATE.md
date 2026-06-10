@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-10T20:49:48.356Z"
+last_updated: "2026-06-10T20:55:12.045Z"
 last_activity: 2026-06-10
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
   percent: 75
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 ## Current Position
 
 Phase: 04 (logger-cli-live-smoke) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-06-10
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [████████░░] 80%
 | Phase 03 P01 | 3min | 2 tasks | 2 files |
 | Phase 03 P02 | 6min | 2 tasks | 2 files |
 | Phase 04 P01 | 3min | 2 tasks | 2 files |
+| Phase 04 P02 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 4 (04-01): ConsoleLogger takes an injected pino.Logger; createConsoleLogger(level) is the sole place the real synchronous pino-pretty stream is built (mirrors api.ts realDelay/factory split) — keeps the unit test offline.
 - [Phase ?]: Phase 4 (04-01): foldArgs bridges message-first Logger calls to pino's (mergeObj, message) idiom — 0 args -> message-only; one non-null non-array object -> merge object; everything else wrapped under one 'args' key so the message stays the headline (arrays wrapped, not spread).
 - [Phase ?]: Phase 4 (04-01): used the synchronous pretty-stream form pino(opts, pinoPretty({ sync: true })) over the worker-thread transport form to remove logs-lost-on-exit risk for the short-lived CLI; logger.ts is the codebase's sole pino/pino-pretty importer (T-04-01 log-injection mitigated by keeping caller values as structured fields).
+- [Phase ?]: Phase 4 (04-02): Q1 resolved option (b) — export const END from runner.ts (additive, byte-identical strings) so index.ts maps GameReport.reason->exit-code from one source of truth (DRY/greppable).
+- [Phase ?]: Phase 4 (04-02): enriched runner narration on the INFO/WARN/DEBUG taxonomy inside the LOCKED loop — INFO=chosen ad+solve outcome+each buy, WARN=no-eligible-ad/shoppingSuccess:false, DEBUG=candidate/catalog/fetch; untrusted API strings passed as structured fields (T-04-01).
 
 ### Pending Todos
 
@@ -125,6 +128,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T20:49:11.119Z
+Last session: 2026-06-10T20:55:04.878Z
 Stopped at: Phase 4 context gathered
 Resume file: None

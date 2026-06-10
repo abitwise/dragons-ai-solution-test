@@ -121,7 +121,7 @@ Plans:
 **Wave 1** *(parallel — disjoint files: logger.* vs runner.*)*
 
 - [x] 04-01-PLAN.md — ConsoleLogger (TDD, LOG-01): Pino + pino-pretty behind the `Logger` interface; message-first→object-first fold (D-02), level routing, sync pretty-stream factory (D-01/D-03)
-- [ ] 04-02-PLAN.md — Runner narration enrichment (LOG-01): INFO/WARN/DEBUG taxonomy inside the locked loop (D-04/D-05/D-06) + export `END` for DRY exit-code mapping (Q1)
+- [x] 04-02-PLAN.md — Runner narration enrichment (LOG-01): INFO/WARN/DEBUG taxonomy inside the locked loop (D-04/D-05/D-06) + export `END` for DRY exit-code mapping (Q1)
 
 **Wave 2** *(blocked on Wave 1 — needs createConsoleLogger + exported END)*
 
@@ -141,4 +141,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
 | 3. Game Loop & Shop Integration | 2/2 | Complete    | 2026-06-10 |
-| 4. Logger, CLI & Live Smoke | 1/4 | In Progress|  |
+| 4. Logger, CLI & Live Smoke | 2/4 | In Progress|  |
