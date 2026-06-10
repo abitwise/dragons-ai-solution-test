@@ -24,7 +24,7 @@
  */
 
 import { applyBuyResult, applySolveResult, chooseAd, chooseShopPurchase } from "./strategy.js";
-import type { Ad, ApiClient, GameReport, GameState, Logger } from "./types.js";
+import type { Ad, ApiClient, EndReason, GameReport, GameState, Logger } from "./types.js";
 
 /** Generous backstop; the turn-based cap (D-05). A flat turn never reaches it. */
 const MAX_TURN = 2000;
@@ -51,6 +51,13 @@ export const END = {
   TURN_CAP: "stopped: max-turn cap reached",
   NO_PROGRESS: "stopped: no-progress guard tripped",
 } as const;
+
+// Type-level drift catcher (WR-04): each `END` value MUST be a member of the
+// `EndReason` union in `types.ts`. If a wording here drifts from the union (or a
+// fourth reason is added without updating the type), `tsc` fails here — keeping
+// `GameReport.reason`'s narrowed type and the runtime `END` source of truth in
+// lock-step. Type-only; emits no runtime code.
+type _AssertEndValuesAreEndReason = (typeof END)[keyof typeof END] extends EndReason ? true : never;
 
 /** A non-game-over stop reason, or `null` to keep playing. The closed `END` set. */
 type StopReason = typeof END.TURN_CAP | typeof END.NO_PROGRESS | null;

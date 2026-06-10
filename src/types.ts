@@ -97,11 +97,27 @@ export interface BuyResult {
   turn: number;
 }
 
+/**
+ * The closed set of end-reason strings a game can finish with (WR-04). Declared
+ * here as a TYPE-LEVEL union (no runtime value, no runtime import — `types.ts`
+ * stays the leaf of the graph) so `GameReport.reason` is narrowed to exactly the
+ * three known ASCII strings. The runtime `END` const in `runner.ts` is the
+ * single source of truth and is asserted (type-only) to match this union, so the
+ * always-visible FINAL SCORE banner can never receive an arbitrary `string`
+ * (e.g. astral characters that would mis-border the banner's width math).
+ *
+ * These three strings MUST stay byte-identical to `runner.ts`'s `END` values.
+ */
+export type EndReason =
+  | "game over: lives reached 0"
+  | "stopped: max-turn cap reached"
+  | "stopped: no-progress guard tripped";
+
 /** The final summary returned when a game ends (lives reach 0 or a guard trips). */
 export interface GameReport {
   score: number;
   turns: number;
-  reason: string;
+  reason: EndReason;
 }
 
 /**
