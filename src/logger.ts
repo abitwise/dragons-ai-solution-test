@@ -46,7 +46,12 @@ function foldArgs(args: unknown[]): Record<string, unknown> | undefined {
   if (args.length === 0) {
     return undefined;
   }
-  if (args.length === 1 && typeof args[0] === "object" && args[0] !== null && !Array.isArray(args[0])) {
+  if (
+    args.length === 1 &&
+    typeof args[0] === "object" &&
+    args[0] !== null &&
+    !Array.isArray(args[0])
+  ) {
     return args[0] as Record<string, unknown>;
   }
   return { args };
@@ -91,4 +96,32 @@ export class ConsoleLogger implements Logger {
   error(message: string, ...args: unknown[]): void {
     this.emit("error", message, args);
   }
+}
+
+/**
+ * The verified-good pretty defaults (D-03, Claude's discretion). `sync: true` is
+ * the load-bearing one: it makes pino-pretty write SYNCHRONOUSLY (no worker
+ * thread), so a short-lived CLI flushes deterministically on exit. The
+ * worker-thread (pino-transport) form is deliberately NOT used — its async
+ * flush can drop the final lines (the most important ones) when the process
+ * exits; this factory passes the stream as pino's second arg instead.
+ */
+const PRETTY_OPTIONS = {
+  colorize: true,
+  translateTime: "SYS:HH:MM:ss",
+  ignore: "pid,hostname",
+  sync: true,
+} as const;
+
+/**
+ * Production factory (composition root calls this) — the ONLY place the real
+ * synchronous pretty stream is constructed. Mirrors `api.ts`'s `realDelay` +
+ * factory-with-defaults split: the class stays injectable for tests, the real
+ * wiring lives here. `level` is the resolved verbosity string (D-10), passed in
+ * by `index.ts`. Deterministic flush comes from the sync stream plus the
+ * caller's `process.exitCode`+return discipline — not from this factory.
+ */
+export function createConsoleLogger(level: string): ConsoleLogger {
+  const stream = pinoPretty(PRETTY_OPTIONS);
+  return new ConsoleLogger(pino({ level }, stream));
 }
