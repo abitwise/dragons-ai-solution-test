@@ -44,18 +44,33 @@ away, this loop must work.
   climbing turn trips the `MAX_TURN` cap, a flat turn (or a permanently-empty board) trips the
   no-progress guard. A mid-game `ApiClient` error propagates verbatim as a typed rejection (no
   try/catch, no `API_ERROR` reason — the user-facing CLI catch is deferred to Phase 4). This also
-  validates cross-turn state tracking and the TDD-coverage capability. The remaining Active items
-  (CLI entrypoint, leveled logging, final-score printout, live smoke) gate on Phase 4.
+  validates cross-turn state tracking and the TDD-coverage capability.
+- **Logger, CLI & live smoke (Phase 4, 2026-06-11) — milestone v1.0 complete:** the concrete
+  `ConsoleLogger` (pino + pino-pretty, the sole pino importer behind the `Logger` interface) and the
+  `src/index.ts` composition root — the ONLY site that constructs the real `HttpApiClient` +
+  `ConsoleLogger` and injects them into `playGame` — close the end-to-end loop (LOG-01, LOG-02; 146
+  offline tests, still zero live network). Each turn narrates at a leveled taxonomy (INFO per
+  decision/outcome, WARN per skip/failed-buy, DEBUG play-by-play, ERROR on crash) with untrusted API
+  strings carried as structured fields, never interpolated. On game end the CLI prints a bordered
+  FINAL SCORE block to stdout (visible at any level) and exits 0 / 1 / 2 via `process.exitCode`
+  (game-over / guard / error). The **one and only live smoke** was run and accepted: `npm start`
+  played a full real game to completion (exit 0, score 3768, 70 turns) and `LOG_LEVEL=debug npm
+  start` showed the full play-by-play (exit 0, score 5838, 93 turns), banners intact at both levels.
+  This validates every remaining end-to-end capability requirement below.
 
 ### Active
 
-- [ ] Running the CLI starts a new game and autoplays it to game-over with no human interaction *(loop proven in Phase 3; CLI entrypoint is Phase 4)*
-- [ ] Each turn, the bot fetches the available ads/quests and current game state from the API *(wired offline in Phase 3; live wiring is Phase 4)*
-- [ ] A readable heuristic chooses which ad to solve (prefer high reward among high-probability ads)
-- [ ] The bot uses the shop to stay alive / improve (buy healing or upgrades when affordable and sensible) *(shop drain wired into the loop in Phase 3)*
-- [ ] The bot handles API/transport errors gracefully (sane retry or clean termination, no crash) *(retry in Phase 1; clean typed-rejection termination proven in Phase 3; CLI exit is Phase 4)*
-- [ ] Every decision and outcome is logged in human-readable, leveled console output
-- [ ] The final score is reported clearly when the game ends *(playGame returns the final-score GameReport in Phase 3; CLI printout is Phase 4)*
+*(none — all capability requirements validated as of Phase 4 / milestone v1.0)*
+
+The following were validated end-to-end in Phase 4 (live smoke, 2026-06-11):
+
+- [x] Running the CLI starts a new game and autoplays it to game-over with no human interaction
+- [x] Each turn, the bot fetches the available ads/quests and current game state from the API
+- [x] A readable heuristic chooses which ad to solve (prefer high reward among high-probability ads)
+- [x] The bot uses the shop to stay alive / improve (buy healing or upgrades when affordable and sensible)
+- [x] The bot handles API/transport errors gracefully (sane retry or clean termination, no crash)
+- [x] Every decision and outcome is logged in human-readable, leveled console output
+- [x] The final score is reported clearly when the game ends
 
 ### Out of Scope
 
@@ -119,4 +134,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-10 after Phase 3 (game loop & shop integration) completion*
+*Last updated: 2026-06-11 after Phase 4 (logger, CLI & live smoke) completion — milestone v1.0 complete*
