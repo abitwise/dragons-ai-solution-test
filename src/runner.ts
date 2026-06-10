@@ -182,6 +182,12 @@ export async function playGame(api: ApiClient, logger: Logger): Promise<GameRepo
 
   while (state.lives > 0) {
     const turnBefore = state.turn;
+    // Capture the other tracked progress fields alongside `turn` (WR-03): a buy
+    // or solve can make genuine progress (score/gold change) without the API's
+    // `turn` advancing for this observation, and tying "progress" exclusively to
+    // `turn` would miscount that real work as a stall and abort a winnable game.
+    const scoreBefore = state.score;
+    const goldBefore = state.gold;
 
     // SHOP PHASE (D-01/D-02): drain sensible buys before the solve.
     state = await drainShop(api, state, logger);
@@ -223,9 +229,15 @@ export async function playGame(api: ApiClient, logger: Logger): Promise<GameRepo
       logger.warn("no eligible ad this turn (nothing to do)", { adsSeen: ads.length });
     }
 
-    // After the iteration's work: reset the stall counter when `turn` advanced
-    // (D-06), else accumulate; then check both guards on the just-played state.
-    stalls = state.turn > turnBefore ? 0 : stalls + 1;
+    // After the iteration's work: reset the stall counter when ANY tracked state
+    // field advanced — `turn` climbed, OR `score`/`gold` changed (WR-03) — else
+    // accumulate; then check both guards on the just-played state. Defining
+    // progress as "the game state changed" (not just `turn`) keeps the guard's
+    // intent (catch a truly FLAT loop) while no longer aborting a turn-flat-but-
+    // real-progress iteration.
+    const progressed =
+      state.turn > turnBefore || state.score !== scoreBefore || state.gold !== goldBefore;
+    stalls = progressed ? 0 : stalls + 1;
     const stop = shouldStop(state.turn, stalls);
     if (stop !== null) {
       const report: GameReport = { score: state.score, turns: state.turn, reason: stop };

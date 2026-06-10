@@ -306,6 +306,40 @@ describe("playGame termination & errors", () => {
     expect(fake.calls.filter((c) => c.method === "solve")).toHaveLength(1);
   });
 
+  it("does NOT trip the no-progress guard when score advances but turn stays flat (WR-03)", async () => {
+    // Each iteration solves an ad that bumps `score` but leaves `turn` at 0 (a
+    // turn-flat-but-real-progress observation). Under a turn-only stall counter
+    // this would trip NO_PROGRESS after 3 iterations, prematurely ending a game
+    // that is genuinely making progress. With progress defined as "any tracked
+    // field changed," the stall counter resets every iteration and the game runs
+    // until a scripted lives:0 solve drives a clean GAME_OVER.
+    let solves = 0;
+    const fake = new FakeApiClient({
+      startGame: [baseState({ lives: 3, turn: 0, score: 0 })],
+      getShop: () => [], // no buys: only the solve drives state
+      getMessages: () => [adFixture("a1")], // always one solvable ad
+      solve: () => {
+        solves += 1;
+        // Throw-guard: if a turn-only guard (RED) trips early this never reaches
+        // a large count; the safety throw stops a regression-free runaway fast.
+        if (solves > 50) throw new Error("runaway: should have ended via lives:0 by now");
+        // Five turn-flat score-advancing solves, then a lives:0 solve ends it.
+        // turn stays 0 throughout; score climbs each call (real progress).
+        return solves < 6
+          ? solveFixture({ success: true, lives: 3, score: solves * 10, turn: 0 })
+          : solveFixture({ success: false, lives: 0, score: solves * 10, turn: 0 });
+      },
+    });
+
+    const report = await playGame(fake, logger);
+
+    // It ended via lives:0 (GAME_OVER), NOT via the no-progress guard — proving a
+    // score-advancing-but-turn-flat iteration is counted as progress.
+    expect(report.reason).toBe(REASON.GAME_OVER);
+    // It ran well past NO_PROGRESS_LIMIT (3) score-advancing iterations.
+    expect(fake.calls.filter((c) => c.method === "solve").length).toBeGreaterThan(3);
+  });
+
   it("empty board rides into the no-progress guard — no separate empty-board reason (D-14)", async () => {
     // chooseAd returns null every iteration AND the shop buys nothing → nothing
     // turn-consuming → state.turn flat → unified stall-termination with NO_PROGRESS.
