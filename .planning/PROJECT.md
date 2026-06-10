@@ -35,18 +35,27 @@ away, this loop must work.
   `BuyResult` symmetric with `solve()`, so `applyBuyResult` is reachable end-to-end and the final
   score is protected. These functions are proven in isolation; the end-to-end capability
   requirements below validate once Phase 3 wires them into the runner loop.
+- **Game loop & shop integration (Phase 3, 2026-06-10):** the imperative-shell runner `runner.ts`
+  now wires the proven strategy to the proven `ApiClient` seam — `playGame(api, logger)` runs a
+  full autonomous game offline against `FakeApiClient` (129 offline tests, zero live network,
+  LOOP-01/02/03). Per turn it drains the shop first, re-fetches ads so `expiresIn` stays current,
+  solves the chosen ad, and threads all state through `applySolveResult`/`applyBuyResult` (the final
+  score is never zeroed by a buy). Dual termination guards make non-termination impossible — a
+  climbing turn trips the `MAX_TURN` cap, a flat turn (or a permanently-empty board) trips the
+  no-progress guard. A mid-game `ApiClient` error propagates verbatim as a typed rejection (no
+  try/catch, no `API_ERROR` reason — the user-facing CLI catch is deferred to Phase 4). This also
+  validates cross-turn state tracking and the TDD-coverage capability. The remaining Active items
+  (CLI entrypoint, leveled logging, final-score printout, live smoke) gate on Phase 4.
 
 ### Active
 
-- [ ] Running the CLI starts a new game and autoplays it to game-over with no human interaction
-- [ ] Each turn, the bot fetches the available ads/quests and current game state from the API
+- [ ] Running the CLI starts a new game and autoplays it to game-over with no human interaction *(loop proven in Phase 3; CLI entrypoint is Phase 4)*
+- [ ] Each turn, the bot fetches the available ads/quests and current game state from the API *(wired offline in Phase 3; live wiring is Phase 4)*
 - [ ] A readable heuristic chooses which ad to solve (prefer high reward among high-probability ads)
-- [ ] The bot tracks game state across turns (lives, gold, score, level/turn)
-- [ ] The bot uses the shop to stay alive / improve (buy healing or upgrades when affordable and sensible)
-- [ ] The bot handles API/transport errors gracefully (sane retry or clean termination, no crash)
+- [ ] The bot uses the shop to stay alive / improve (buy healing or upgrades when affordable and sensible) *(shop drain wired into the loop in Phase 3)*
+- [ ] The bot handles API/transport errors gracefully (sane retry or clean termination, no crash) *(retry in Phase 1; clean typed-rejection termination proven in Phase 3; CLI exit is Phase 4)*
 - [ ] Every decision and outcome is logged in human-readable, leveled console output
-- [ ] The final score is reported clearly when the game ends
-- [ ] Core decision logic is covered by TDD unit tests against a mocked API client
+- [ ] The final score is reported clearly when the game ends *(playGame returns the final-score GameReport in Phase 3; CLI printout is Phase 4)*
 
 ### Out of Scope
 
@@ -88,8 +97,8 @@ away, this loop must work.
 |----------|-----------|---------|
 | TypeScript + Node CLI | Required by brief; natural fit for an API-driven bot | — Pending |
 | Readable heuristic strategy (best reward among high-probability ads) | "Keep it simple" — good-enough play without optimizer complexity | ✅ Built in Phase 2 — `chooseAd` ranks by expected value (`reward × rank`) with an expiry-aware tiebreak and a least-bad-gamble fallback; all pure and TDD-covered |
-| Play a single game to game-over per CLI run | Simplest useful, demonstrable behavior | — Pending |
-| Mock the API in unit tests | Fast, deterministic TDD without network flakiness | — Pending |
+| Play a single game to game-over per CLI run | Simplest useful, demonstrable behavior | ✅ Phase 3 — `playGame` runs one full game to game-over offline (GAME_OVER / TURN_CAP / NO_PROGRESS all reachable); CLI run wiring lands in Phase 4 |
+| Mock the API in unit tests | Fast, deterministic TDD without network flakiness | ✅ Built Phases 1–3 — `FakeApiClient` drives all 129 offline tests with zero live network |
 | Human-readable, leveled logging | Makes the bot's decisions easy to follow and review | — Pending |
 
 ## Evolution
@@ -110,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-09 after Phase 2 (strategy core) completion*
+*Last updated: 2026-06-10 after Phase 3 (game loop & shop integration) completion*
