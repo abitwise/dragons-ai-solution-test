@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-10T20:55:12.045Z"
+last_updated: "2026-06-10T21:02:51.151Z"
 last_activity: 2026-06-10
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 75
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 ## Current Position
 
 Phase: 04 (logger-cli-live-smoke) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-06-10
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 87%
 | Phase 03 P02 | 6min | 2 tasks | 2 files |
 | Phase 04 P01 | 3min | 2 tasks | 2 files |
 | Phase 04 P02 | 3min | 2 tasks | 2 files |
+| Phase 04 P03 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,9 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 4 (04-01): used the synchronous pretty-stream form pino(opts, pinoPretty({ sync: true })) over the worker-thread transport form to remove logs-lost-on-exit risk for the short-lived CLI; logger.ts is the codebase's sole pino/pino-pretty importer (T-04-01 log-injection mitigated by keeping caller values as structured fields).
 - [Phase ?]: Phase 4 (04-02): Q1 resolved option (b) — export const END from runner.ts (additive, byte-identical strings) so index.ts maps GameReport.reason->exit-code from one source of truth (DRY/greppable).
 - [Phase ?]: Phase 4 (04-02): enriched runner narration on the INFO/WARN/DEBUG taxonomy inside the LOCKED loop — INFO=chosen ad+solve outcome+each buy, WARN=no-eligible-ad/shoppingSuccess:false, DEBUG=candidate/catalog/fetch; untrusted API strings passed as structured fields (T-04-01).
+- [Phase ?]: Phase 4 (04-03): index.ts is the CLI composition root — the ONLY site constructing the real HttpApiClient + ConsoleLogger and injecting them into playGame (LOG-02 / success criterion #3); base URL stays owned by api.ts.
+- [Phase ?]: Phase 4 (04-03): resolveLogLevel precedence --log-level > --verbose/-v > LOG_LEVEL env (lowercased) > 'info' (Q2); bogus level rejected against closed PINO_LEVELS set (T-04-03). exitCodeForReason consumes exported END (DRY): GAME_OVER->0 else 1; thrown error->2 in the single try/catch (D-08/D-09); sets process.exitCode + returns, never process.exit().
+- [Phase ?]: Phase 4 (04-03): Q3 skip shebang/bin (run via npm start); Q4 export both pure helpers from index.ts (no 7th source file); safeResolveLogLevel degrades a bad flag to 'info' to keep a single createConsoleLogger construction site.
 
 ### Pending Todos
 
@@ -128,6 +132,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T20:55:04.878Z
-Stopped at: Phase 4 context gathered
+Last session: 2026-06-10T21:02:51.144Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None

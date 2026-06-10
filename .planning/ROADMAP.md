@@ -125,7 +125,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 — needs createConsoleLogger + exported END)*
 
-- [ ] 04-03-PLAN.md — index.ts composition root (TDD, LOG-02): resolveLogLevel (flag>env>info, D-10/Q2), exitCodeForReason (0/1/2, D-08), always-visible FINAL SCORE banner (D-07), single try/catch (D-09)
+- [x] 04-03-PLAN.md — index.ts composition root (TDD, LOG-02): resolveLogLevel (flag>env>info, D-10/Q2), exitCodeForReason (0/1/2, D-08), always-visible FINAL SCORE banner (D-07), single try/catch (D-09)
 
 **Wave 3** *(blocked on Wave 2 — needs the full CLI wired)*
 
@@ -141,4 +141,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
 | 3. Game Loop & Shop Integration | 2/2 | Complete    | 2026-06-10 |
-| 4. Logger, CLI & Live Smoke | 2/4 | In Progress|  |
+| 4. Logger, CLI & Live Smoke | 3/4 | In Progress|  |

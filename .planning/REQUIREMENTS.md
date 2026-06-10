@@ -34,7 +34,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 ### Logging & Output
 
 - [x] **LOG-01**: Each turn's decision and outcome is logged in human-readable, leveled output
-- [ ] **LOG-02**: A clear final-score summary (score, turns, end reason) is printed on game end, and the CLI exits with a status code reflecting the run outcome
+- [x] **LOG-02**: A clear final-score summary (score, turns, end reason) is printed on game end, and the CLI exits with a status code reflecting the run outcome
 
 ### Testing (TDD)
 
@@ -89,7 +89,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LOOP-02 | Phase 3 | Complete |
 | LOOP-03 | Phase 3 | Complete |
 | LOG-01 | Phase 4 | Complete |
-| LOG-02 | Phase 4 | Pending |
+| LOG-02 | Phase 4 | Complete |
 | TEST-01 | Phase 2 | Complete |
 
 **Coverage:**
