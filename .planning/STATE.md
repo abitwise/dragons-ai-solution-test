@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-10T14:52:10.765Z"
+status: verifying
+last_updated: "2026-06-10T15:03:48.651Z"
 last_activity: 2026-06-10
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
-  percent: 50
+  completed_plans: 11
+  percent: 75
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 
 Phase: 03 (game-loop-shop-integration) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-10
 
-Progress: [█████████░] 91%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [█████████░] 91%
 | Phase 02 P04 | 3min | 2 tasks tasks | 2 files files |
 | Phase 02 P05 | 6min | 4 tasks | 7 files |
 | Phase 03 P01 | 3min | 2 tasks | 2 files |
+| Phase 03 P02 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Phase 2 (02-05): WR-02 resolved via option (a) — ApiClient.buy() returns Promise<BuyResult> symmetric with solve(); api.ts score:0/highScore:0 placeholders deleted, applyBuyResult is the only score-merge path
 - [Phase 02]: Phase 2 (02-05): WR-01/WR-03 hardening — Number.isFinite guards drop non-finite reward (shared isAttemptable predicate, lock-step primary+fallback) and treat non-finite cost as unaffordable (heal+upgrade), degrading without throwing
 - [Phase ?]: Phase 3 (03-01): playGame imperative shell built TDD-first — shop-phase drain (drainShop) first, then fresh ads + one solve; state threaded only through applyBuyResult/applySolveResult (D-04), never assigning a raw result. MAX_TURN/NO_PROGRESS_LIMIT/END.TURN_CAP/END.NO_PROGRESS declared but unwired (deferred to 03-02); END is a const object not a TS enum.
+- [Phase ?]: Phase 3 (03-02): wired the dual termination guards into playGame — max-turn cap (state.turn > MAX_TURN -> END.TURN_CAP, D-05) and no-progress stall counter (NO_PROGRESS_LIMIT consecutive non-advancing iterations -> END.NO_PROGRESS, D-06) with reset-on-advance, checked at the bottom of each iteration so the advancing iteration resets the counter before it can trip.
+- [Phase ?]: Phase 3 (03-02): error pass-through (D-11) needed ZERO code — a thrown Boundary/TransportError rejects playGame verbatim through the await-only loop; runner imports no error class, adds no try/catch, END keeps exactly three reasons (no API_ERROR, D-10). Phase 3 feature-complete: GAME_OVER/TURN_CAP/NO_PROGRESS all reachable and tested.
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T14:51:43.573Z
+Last session: 2026-06-10T15:02:59.817Z
 Stopped at: Phase 3 context gathered
 Resume file: None

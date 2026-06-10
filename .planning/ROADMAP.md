@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation — Types, API Client & Test Seam** - Shared types plus the injectable HttpApiClient (retry, decode, coercion) and the FakeApiClient double; suite passes offline (completed 2026-06-09)
 - [x] **Phase 2: Strategy Core — Pure Decision Logic (TDD)** - Test-first pure functions for probability ranking, ad selection, state merge, and shop decisions (completed 2026-06-09)
-- [ ] **Phase 3: Game Loop & Shop Integration** - A thin runner that autoplays one full game to game-over with shop buys and infinite-loop guards
+- [x] **Phase 3: Game Loop & Shop Integration** - A thin runner that autoplays one full game to game-over with shop buys and infinite-loop guards (completed 2026-06-10)
 - [ ] **Phase 4: Logger, CLI & Live Smoke** - Leveled human-readable logging, the CLI composition root, a clear final-score summary, and a live smoke run
 
 ## Phase Details
@@ -101,7 +101,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — Termination guards + error pass-through (TDD, LOOP-02/03): max-turn cap (TURN_CAP), no-progress guard (NO_PROGRESS, empty-board D-14), typed-error rejection (BoundaryError/TransportError), solve/buy failure-body-is-normal
+- [x] 03-02-PLAN.md — Termination guards + error pass-through (TDD, LOOP-02/03): max-turn cap (TURN_CAP), no-progress guard (NO_PROGRESS, empty-board D-14), typed-error rejection (BoundaryError/TransportError), solve/buy failure-body-is-normal
 
 ### Phase 4: Logger, CLI & Live Smoke
 
@@ -126,5 +126,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
-| 3. Game Loop & Shop Integration | 1/2 | In Progress|  |
+| 3. Game Loop & Shop Integration | 2/2 | Complete   | 2026-06-10 |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |
