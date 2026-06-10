@@ -92,7 +92,16 @@ Plans:
   3. Ads are re-fetched after each turn-consuming action so `expiresIn` stays current, and the defined fallback is applied when no eligible ad exists
   4. An `ApiClient` error mid-game ends the run cleanly (game-over with a reason) rather than crashing, and the whole loop is verified offline against the fake with no live network
 
-**Plans**: TBD
+**Plans**: 2 plans (2 waves — sequential; both touch `src/runner.ts` + `src/runner.test.ts`)
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — playGame core loop (TDD, LOOP-01/03): shop-phase-then-solve, fresh-ads-before-solve, state threading via merge helpers, happy-path game-over GameReport
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — Termination guards + error pass-through (TDD, LOOP-02/03): max-turn cap (TURN_CAP), no-progress guard (NO_PROGRESS, empty-board D-14), typed-error rejection (BoundaryError/TransportError), solve/buy failure-body-is-normal
 
 ### Phase 4: Logger, CLI & Live Smoke
 
@@ -117,5 +126,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
-| 3. Game Loop & Shop Integration | 0/TBD | Not started | - |
+| 3. Game Loop & Shop Integration | 0/2 | Planned | - |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |
