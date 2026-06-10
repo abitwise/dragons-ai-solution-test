@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { exitCodeForReason, resolveLogLevel } from "./index.js";
+import { USAGE, exitCodeForReason, isHelpRequested, resolveLogLevel } from "./index.js";
 
 // Mirrors the three `END` strings in runner.ts (drift catcher, like
 // runner.test.ts:213-217). A wording change in runner.ts must break this.
@@ -65,5 +65,26 @@ describe("exitCodeForReason", () => {
     expect(exitCodeForReason(REASON.GAME_OVER)).toBe(0);
     expect(exitCodeForReason(REASON.TURN_CAP)).toBe(1);
     expect(exitCodeForReason(REASON.NO_PROGRESS)).toBe(1);
+  });
+});
+
+describe("isHelpRequested", () => {
+  it("detects --help and -h (WR-02)", () => {
+    expect(isHelpRequested(["--help"])).toBe(true);
+    expect(isHelpRequested(["-h"])).toBe(true);
+  });
+
+  it("returns false when no help flag is present", () => {
+    expect(isHelpRequested([])).toBe(false);
+    expect(isHelpRequested(["--verbose"])).toBe(false);
+  });
+
+  it("honors help even alongside an unknown flag (non-strict parse)", () => {
+    expect(isHelpRequested(["--lvel", "debug", "--help"])).toBe(true);
+  });
+
+  it("exposes a non-empty USAGE block for the help path to print", () => {
+    expect(USAGE).toContain("Usage:");
+    expect(USAGE).toContain("--help");
   });
 });

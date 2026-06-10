@@ -91,6 +91,47 @@ export function exitCodeForReason(reason: string): 0 | 1 {
 }
 
 /**
+ * The short usage block printed when `--help`/`-h` is passed (WR-02). It
+ * documents the only real flags (verbosity) so the declared help flag is no
+ * longer dead code that silently plays a full game.
+ */
+export const USAGE = `Dragons of Mugloar autoplay bot
+
+Usage: npm start [-- <options>]
+
+Options:
+  -v, --verbose         Set log level to "debug" (verbose play-by-play).
+      --log-level <lvl> Set the pino log level explicitly (wins over --verbose).
+                        One of: trace, debug, info, warn, error, fatal, silent.
+  -h, --help            Print this help and exit without starting a game.
+
+Environment:
+  LOG_LEVEL             Fallback log level when no flag is given (default: info).
+  MUGLOAR_BASE_URL      Override the API base URL (owned by api.ts).
+`;
+
+/**
+ * Detect whether the user asked for usage (WR-02). Takes `argv` as an EXPLICIT
+ * param (never reads `process.argv` itself) so it stays pure and offline-
+ * testable, mirroring `resolveLogLevel`. Parsed in non-strict mode with the same
+ * option vocabulary so an UNKNOWN flag never makes help-detection throw — a help
+ * request must always be honored even alongside a typo'd flag.
+ */
+export function isHelpRequested(argv: string[]): boolean {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      verbose: { type: "boolean", short: "v" },
+      "log-level": { type: "string" },
+      help: { type: "boolean", short: "h" },
+    },
+    allowPositionals: true,
+    strict: false,
+  });
+  return values.help === true;
+}
+
+/**
  * Print the always-visible FINAL SCORE summary (D-07). It writes a bordered
  * block straight to `process.stdout` — deliberately BYPASSING pino — so the
  * final score is shown regardless of the resolved log level (even at `silent`).
@@ -140,6 +181,15 @@ function safeResolveLogLevel(): string {
  * drains the synchronous pretty stream + the stdout banner fully before exiting.
  */
 async function main(): Promise<void> {
+  // Honor --help/-h BEFORE constructing anything or starting a game (WR-02):
+  // print usage straight to stdout (bypassing pino, like the banner) and return
+  // with exit 0 so no live game runs.
+  if (isHelpRequested(process.argv.slice(2))) {
+    process.stdout.write(USAGE);
+    process.exitCode = 0;
+    return;
+  }
+
   const level = safeResolveLogLevel();
   // The ONLY place the real pair is constructed (success criterion #3). The base
   // URL is owned by api.ts (non-www default + MUGLOAR_BASE_URL); index.ts never
