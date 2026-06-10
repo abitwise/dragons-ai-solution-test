@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-10T16:44:48.178Z"
-last_activity: 2026-06-10 -- Phase 04 planning complete
+last_updated: "2026-06-10T20:49:48.356Z"
+last_activity: 2026-06-10
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 15
-  completed_plans: 11
-  percent: 73
+  completed_plans: 12
+  percent: 75
 ---
 
 # Project State
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-09)
 
 **Core value:** The bot autonomously plays a full game of Dragons of Mugloar to completion and reports its final score — driven by a simple, correct, well-tested decision loop.
-**Current focus:** Phase 4 — logger, cli & live smoke
+**Current focus:** Phase 04 — logger-cli-live-smoke
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04 (logger-cli-live-smoke) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-06-10 -- Phase 04 planning complete
+Last activity: 2026-06-10
 
-Progress: [██████████] 100%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [██████████] 100%
 | Phase 02 P05 | 6min | 4 tasks | 7 files |
 | Phase 03 P01 | 3min | 2 tasks | 2 files |
 | Phase 03 P02 | 6min | 2 tasks | 2 files |
+| Phase 04 P01 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 3 (03-01): playGame imperative shell built TDD-first — shop-phase drain (drainShop) first, then fresh ads + one solve; state threaded only through applyBuyResult/applySolveResult (D-04), never assigning a raw result. MAX_TURN/NO_PROGRESS_LIMIT/END.TURN_CAP/END.NO_PROGRESS declared but unwired (deferred to 03-02); END is a const object not a TS enum.
 - [Phase ?]: Phase 3 (03-02): wired the dual termination guards into playGame — max-turn cap (state.turn > MAX_TURN -> END.TURN_CAP, D-05) and no-progress stall counter (NO_PROGRESS_LIMIT consecutive non-advancing iterations -> END.NO_PROGRESS, D-06) with reset-on-advance, checked at the bottom of each iteration so the advancing iteration resets the counter before it can trip.
 - [Phase ?]: Phase 3 (03-02): error pass-through (D-11) needed ZERO code — a thrown Boundary/TransportError rejects playGame verbatim through the await-only loop; runner imports no error class, adds no try/catch, END keeps exactly three reasons (no API_ERROR, D-10). Phase 3 feature-complete: GAME_OVER/TURN_CAP/NO_PROGRESS all reachable and tested.
+- [Phase ?]: Phase 4 (04-01): ConsoleLogger takes an injected pino.Logger; createConsoleLogger(level) is the sole place the real synchronous pino-pretty stream is built (mirrors api.ts realDelay/factory split) — keeps the unit test offline.
+- [Phase ?]: Phase 4 (04-01): foldArgs bridges message-first Logger calls to pino's (mergeObj, message) idiom — 0 args -> message-only; one non-null non-array object -> merge object; everything else wrapped under one 'args' key so the message stays the headline (arrays wrapped, not spread).
+- [Phase ?]: Phase 4 (04-01): used the synchronous pretty-stream form pino(opts, pinoPretty({ sync: true })) over the worker-thread transport form to remove logs-lost-on-exit risk for the short-lived CLI; logger.ts is the codebase's sole pino/pino-pretty importer (T-04-01 log-injection mitigated by keeping caller values as structured fields).
 
 ### Pending Todos
 
@@ -121,6 +125,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T16:13:41.388Z
+Last session: 2026-06-10T20:49:11.119Z
 Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-logger-cli-live-smoke/04-CONTEXT.md
+Resume file: None
