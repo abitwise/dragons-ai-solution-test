@@ -97,7 +97,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — playGame core loop (TDD, LOOP-01/03): shop-phase-then-solve, fresh-ads-before-solve, state threading via merge helpers, happy-path game-over GameReport
+- [x] 03-01-PLAN.md — playGame core loop (TDD, LOOP-01/03): shop-phase-then-solve, fresh-ads-before-solve, state threading via merge helpers, happy-path game-over GameReport
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -126,5 +126,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
-| 3. Game Loop & Shop Integration | 0/2 | Planned | - |
+| 3. Game Loop & Shop Integration | 1/2 | In Progress|  |
 | 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |

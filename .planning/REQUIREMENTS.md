@@ -27,9 +27,9 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Autoplay Loop
 
-- [ ] **LOOP-01**: Running the CLI plays one full game autonomously with no human input
+- [x] **LOOP-01**: Running the CLI plays one full game autonomously with no human input
 - [ ] **LOOP-02**: The loop runs until lives reach 0, enforcing a max-turn safety cap and a no-progress guard so it can never run forever
-- [ ] **LOOP-03**: Ads are re-fetched after each turn-consuming action (expiry stays current), and a defined fallback is applied when no eligible ad exists
+- [x] **LOOP-03**: Ads are re-fetched after each turn-consuming action (expiry stays current), and a defined fallback is applied when no eligible ad exists
 
 ### Logging & Output
 
@@ -85,9 +85,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | STRAT-04 | Phase 2 | Complete |
 | STRAT-05 | Phase 2 | Complete |
 | STRAT-06 | Phase 2 | Complete |
-| LOOP-01 | Phase 3 | Pending |
+| LOOP-01 | Phase 3 | Complete |
 | LOOP-02 | Phase 3 | Pending |
-| LOOP-03 | Phase 3 | Pending |
+| LOOP-03 | Phase 3 | Complete |
 | LOG-01 | Phase 4 | Pending |
 | LOG-02 | Phase 4 | Pending |
 | TEST-01 | Phase 2 | Complete |
