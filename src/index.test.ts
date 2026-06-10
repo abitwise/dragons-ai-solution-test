@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { USAGE, exitCodeForReason, isHelpRequested, resolveLogLevel } from "./index.js";
+import { exitCodeForReason, isHelpRequested, resolveLogLevel, USAGE } from "./index.js";
 
 // Mirrors the three `END` strings in runner.ts (drift catcher, like
 // runner.test.ts:213-217). A wording change in runner.ts must break this.
