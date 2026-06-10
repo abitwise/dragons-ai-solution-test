@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation — Types, API Client & Test Seam** - Shared types plus the injectable HttpApiClient (retry, decode, coercion) and the FakeApiClient double; suite passes offline (completed 2026-06-09)
 - [x] **Phase 2: Strategy Core — Pure Decision Logic (TDD)** - Test-first pure functions for probability ranking, ad selection, state merge, and shop decisions (completed 2026-06-09)
 - [x] **Phase 3: Game Loop & Shop Integration** - A thin runner that autoplays one full game to game-over with shop buys and infinite-loop guards (completed 2026-06-10)
-- [ ] **Phase 4: Logger, CLI & Live Smoke** - Leveled human-readable logging, the CLI composition root, a clear final-score summary, and a live smoke run
+- [x] **Phase 4: Logger, CLI & Live Smoke** - Leveled human-readable logging, the CLI composition root, a clear final-score summary, and a live smoke run (completed 2026-06-10)
 
 ## Phase Details
 
@@ -129,7 +129,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 — needs the full CLI wired)*
 
-- [ ] 04-04-PLAN.md — Manual live smoke (LOG-01/LOG-02, D-12): offline phase gate (suite/typecheck/lint, zero live calls) + non-autonomous `npm start` live run against the real API
+- [x] 04-04-PLAN.md — Manual live smoke (LOG-01/LOG-02, D-12): offline phase gate (suite/typecheck/lint, zero live calls) + non-autonomous `npm start` live run against the real API
 
 ## Progress
 
@@ -141,4 +141,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
 | 3. Game Loop & Shop Integration | 2/2 | Complete    | 2026-06-10 |
-| 4. Logger, CLI & Live Smoke | 3/4 | In Progress|  |
+| 4. Logger, CLI & Live Smoke | 4/4 | Complete   | 2026-06-10 |
