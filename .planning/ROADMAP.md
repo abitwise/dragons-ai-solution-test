@@ -141,4 +141,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
 | 3. Game Loop & Shop Integration | 2/2 | Complete    | 2026-06-10 |
-| 4. Logger, CLI & Live Smoke | 4/4 | Complete   | 2026-06-10 |
+| 4. Logger, CLI & Live Smoke | 4/4 | Complete    | 2026-06-10 |
