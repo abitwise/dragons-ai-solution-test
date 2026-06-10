@@ -26,7 +26,7 @@
  */
 
 import { parseArgs } from "node:util";
-import { HttpApiClient } from "./api.js";
+import { BoundaryError, HttpApiClient, TransportError } from "./api.js";
 import { createConsoleLogger } from "./logger.js";
 import { END, playGame } from "./runner.js";
 import type { GameReport } from "./types.js";
@@ -208,13 +208,28 @@ async function main(): Promise<void> {
     printBanner(report);
     process.exitCode = exitCodeForReason(report.reason); // 0 = game-over, 1 = guard stop.
   } catch (err) {
-    // ANY thrown Transport/BoundaryError → exit 2 (D-08). The untrusted message
-    // rides as a STRUCTURED field, never concatenated into the headline
-    // (T-04-01); it originates from our own typed Error classes.
+    // ANY thrown value → exit 2 (D-08), but BRANCH the reporting by type (WR-05)
+    // so a genuine bug is not silently reported as an expected network failure:
+    //   - TransportError → a retryable transport failure (the retries exhausted),
+    //   - BoundaryError  → a terminal boundary/schema-drift failure,
+    //   - anything else  → an UNEXPECTED internal error (e.g. a real TypeError),
+    //     which must stand out during the live smoke rather than be masked.
+    // The untrusted message ALWAYS rides as a STRUCTURED field, never
+    // concatenated into the headline (T-04-01).
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("game crashed", { error: message });
-    // A clear, always-visible failure line to stdout (mirrors the banner path).
-    process.stdout.write(`\nRun failed: ${message}\n`);
+    const kind =
+      err instanceof TransportError
+        ? "transport error"
+        : err instanceof BoundaryError
+          ? "boundary error"
+          : "unexpected internal error";
+    // Single channel for the human-readable line (WR-05): the always-visible
+    // stdout write (mirrors the banner path, shown even at `silent`). The
+    // logger.error carries only the STRUCTURED diagnostic fields — it does NOT
+    // repeat the human headline, so the failure is not double-printed across two
+    // streams under pretty rendering.
+    logger.error("game crashed", { kind, error: message });
+    process.stdout.write(`\nRun failed (${kind}): ${message}\n`);
     process.exitCode = 2;
   }
   // No process.exit(): returning drains the sync pretty stream + stdout fully.
