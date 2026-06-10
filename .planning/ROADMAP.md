@@ -115,7 +115,21 @@ Plans:
   3. `index.ts` is the only place real `HttpApiClient` and `ConsoleLogger` are constructed and injected into `playGame`
   4. A manual live smoke run against the real API completes a full game and prints the summary, while the automated test suite still makes zero live network calls
 
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
+
+Plans:
+**Wave 1** *(parallel — disjoint files: logger.* vs runner.*)*
+
+- [ ] 04-01-PLAN.md — ConsoleLogger (TDD, LOG-01): Pino + pino-pretty behind the `Logger` interface; message-first→object-first fold (D-02), level routing, sync pretty-stream factory (D-01/D-03)
+- [ ] 04-02-PLAN.md — Runner narration enrichment (LOG-01): INFO/WARN/DEBUG taxonomy inside the locked loop (D-04/D-05/D-06) + export `END` for DRY exit-code mapping (Q1)
+
+**Wave 2** *(blocked on Wave 1 — needs createConsoleLogger + exported END)*
+
+- [ ] 04-03-PLAN.md — index.ts composition root (TDD, LOG-02): resolveLogLevel (flag>env>info, D-10/Q2), exitCodeForReason (0/1/2, D-08), always-visible FINAL SCORE banner (D-07), single try/catch (D-09)
+
+**Wave 3** *(blocked on Wave 2 — needs the full CLI wired)*
+
+- [ ] 04-04-PLAN.md — Manual live smoke (LOG-01/LOG-02, D-12): offline phase gate (suite/typecheck/lint, zero live calls) + non-autonomous `npm start` live run against the real API
 
 ## Progress
 
@@ -127,4 +141,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation — Types, API Client & Test Seam | 4/4 | Complete    | 2026-06-09 |
 | 2. Strategy Core — Pure Decision Logic (TDD) | 5/5 | Complete    | 2026-06-09 |
 | 3. Game Loop & Shop Integration | 2/2 | Complete    | 2026-06-10 |
-| 4. Logger, CLI & Live Smoke | 0/TBD | Not started | - |
+| 4. Logger, CLI & Live Smoke | 0/4 | Not started | - |
