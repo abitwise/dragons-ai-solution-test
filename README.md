@@ -41,11 +41,11 @@ Stop it with **Ctrl-C**. Use `npm start` (not `dev`) to just play one game.
 Either way, the bot plays a complete game and prints a final-score banner:
 
 ```
-+------------------------------------+
-|  FINAL SCORE : 1234                |
-|  TURNS PLAYED: 42                  |
++-------------------------------------------+
+|  FINAL SCORE : 1234                       |
+|  TURNS PLAYED: 42                         |
 |  END REASON  : game over: lives reached 0 |
-+------------------------------------+
++-------------------------------------------+
 ```
 
 ### CLI options
@@ -132,6 +132,11 @@ Each source file has a matching `*.test.ts` beside it.
 
 ## Tech stack
 
-Node.js 24 · TypeScript 5.9 · [tsx](https://tsx.is) (run TS directly, no build) · native `fetch` ·
-[Vitest](https://vitest.dev) · [Pino](https://getpino.io) · [Biome](https://biomejs.dev) ·
-[zod](https://zod.dev) (API-boundary validation).
+- Node.js v 24
+  - TypeScript 5.9
+  - [tsx](https://tsx.is) (run TS directly, no build)
+  - native `fetch`
+  - [Vitest](https://vitest.dev)
+  - [Pino](https://getpino.io)
+  - [Biome](https://biomejs.dev)
+  - [zod](https://zod.dev) (API-boundary validation).
