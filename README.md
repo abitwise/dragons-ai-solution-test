@@ -114,7 +114,8 @@ state, repeat. Two guards (a turn cap and a no-progress detector) make non-termi
 ## Project layout
 
 A flat `src/` directory — functional core / imperative shell, with dependency injection done by
-passing one argument (no DI container):
+passing one argument (no DI container). See **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for the
+dependency graph, layer boundaries, and the rationale for keeping `src/` flat.
 
 | File | Responsibility |
 |------|----------------|
