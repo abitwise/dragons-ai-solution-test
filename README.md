@@ -28,11 +28,17 @@ npm install
 ## Run the bot
 
 ```bash
-npm start          # play one full game against the live API
-npm run dev        # same, with watch/reload (tsx watch) for development
+npm start          # play one full game against the live API, then exit
+npm run dev        # development watch loop (tsx watch) — see note below
 ```
 
-The bot plays a complete game and exits, printing a final-score banner:
+`npm start` plays a single game to completion and **exits** on its own.
+
+`npm run dev` is a **development watch loop**: it does *not* exit after a game — `tsx watch`
+stays running and starts a fresh game whenever you change a source file or press **Enter**.
+Stop it with **Ctrl-C**. Use `npm start` (not `dev`) to just play one game.
+
+Either way, the bot plays a complete game and prints a final-score banner:
 
 ```
 +------------------------------------+
