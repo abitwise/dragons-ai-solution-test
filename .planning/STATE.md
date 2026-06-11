@@ -1,36 +1,33 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: milestone_complete
-last_updated: 2026-06-10T21:29:09.480Z
-last_activity: 2026-06-10
+milestone_name: Autoplay Bot
+status: Awaiting next milestone
+last_updated: "2026-06-11T09:33:29.211Z"
+last_activity: 2026-06-11 — Milestone v1.0 completed and archived
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 15
   completed_plans: 15
-  percent: 75
-stopped_at: Milestone complete (Phase 04 was final phase)
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-09)
+See: .planning/PROJECT.md (updated 2026-06-11 after v1.0 milestone completion)
 
 **Core value:** The bot autonomously plays a full game of Dragons of Mugloar to completion and reports its final score — driven by a simple, correct, well-tested decision loop.
-**Current focus:** Milestone complete
+**Current focus:** Planning next milestone (v1.0 "Autoplay Bot" shipped 2026-06-11; run `/gsd-new-milestone`)
 
 ## Current Position
 
-Phase: 04
-Plan: Not started
-Status: Milestone complete
-Last activity: 2026-06-10
-
-Progress: [█████████░] 93%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-11 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -122,7 +119,8 @@ None yet.
 
 [Issues that affect future work]
 
-- Base URL must default to the non-`www` host (`https://dragonsofmugloar.com/api/v2`) and be configurable — `www.` returned nginx 404s in live testing (research SUMMARY.md).
+- None open. (Resolved in v1.0: base URL defaults to the non-`www` host with a `MUGLOAR_BASE_URL`
+  override in `api.ts`; the live smoke confirmed the real API is reachable and a full game completes.)
 
 ## Deferred Items
 
@@ -137,3 +135,7 @@ Items acknowledged and carried forward from previous milestone close:
 Last session: 2026-06-10T21:02:51.144Z
 Stopped at: Completed 04-03-PLAN.md
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

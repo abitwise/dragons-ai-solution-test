@@ -81,6 +81,32 @@ The following were validated end-to-end in Phase 4 (live smoke, 2026-06-11):
 - Decoding advanced/encrypted ads beyond trivial cases — skip or ignore rather than over-engineer
 - Hitting the live API from the test suite — tests use a mocked client only
 
+## Current State
+
+**Shipped:** v1.0 "Autoplay Bot" — 2026-06-11 (milestone complete, audit passed 18/18).
+
+The bot is feature-complete for v1: `npm start` plays one full real game of Dragons of Mugloar to
+game-over, narrates every decision, prints a FINAL SCORE banner, and exits with a status code
+reflecting the outcome. Accepted live runs scored 3768 (70 turns) and 5838 (93 turns), both exit 0.
+
+- **Codebase:** 8 TypeScript modules + 7 test files in a flat `src/` (~3.8k LOC incl. tests); no
+  build step (tsx), ESM, manual DI.
+- **Tech stack:** Node 24 LTS, TypeScript 5.9, tsx, Vitest (151 tests), pino + pino-pretty, zod (API
+  boundary only), Biome.
+- **Quality gates:** `npm test` (151 passing, zero live network), `tsc --noEmit`, and `biome check`
+  all green.
+- **Known tech debt (v2 candidates, non-blocking):** advisory comment/rationale inaccuracies around
+  the non-finite guards, a theoretical EV-overflow edge not reachable via the live API, and minor
+  smells (redundant Base64 length check, no retry jitter). Full list in
+  `.planning/milestones/v1.0-MILESTONE-AUDIT.md`.
+
+## Next Milestone Goals
+
+Not yet scoped. Candidate directions carried in v2 requirements (see archived
+`milestones/v1.0-REQUIREMENTS.md`): adaptive within-game probability memory (STRAT-07),
+reputation-aware ad weighting (STRAT-08), and multi-game runs with score-statistics aggregation
+(RUN-01). Start the next cycle with `/gsd-new-milestone`.
+
 ## Context
 
 - *Dragons of Mugloar* exposes a REST API (base `https://www.dragonsofmugloar.com/api/v2`). The
@@ -110,11 +136,12 @@ The following were validated end-to-end in Phase 4 (live smoke, 2026-06-11):
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| TypeScript + Node CLI | Required by brief; natural fit for an API-driven bot | — Pending |
-| Readable heuristic strategy (best reward among high-probability ads) | "Keep it simple" — good-enough play without optimizer complexity | ✅ Built in Phase 2 — `chooseAd` ranks by expected value (`reward × rank`) with an expiry-aware tiebreak and a least-bad-gamble fallback; all pure and TDD-covered |
-| Play a single game to game-over per CLI run | Simplest useful, demonstrable behavior | ✅ Phase 3 — `playGame` runs one full game to game-over offline (GAME_OVER / TURN_CAP / NO_PROGRESS all reachable); CLI run wiring lands in Phase 4 |
-| Mock the API in unit tests | Fast, deterministic TDD without network flakiness | ✅ Built Phases 1–3 — `FakeApiClient` drives all 129 offline tests with zero live network |
-| Human-readable, leveled logging | Makes the bot's decisions easy to follow and review | — Pending |
+| TypeScript + Node CLI | Required by brief; natural fit for an API-driven bot | ✅ Good — shipped v1.0 on Node 24 / TS 5.9 / tsx / Vitest / Biome; the live smoke ran a full real game end-to-end |
+| Functional core / imperative shell — 8 flat `src/` modules, manual DI, no HTTP-mock library | "Keep it simple"; the injectable `ApiClient` seam is the one decision that makes everything testable offline | ✅ Good — `types.ts → strategy.ts → runner.ts → index.ts` chain verified acyclic; `api.ts` the sole `fetch` caller; 151 offline tests, zero live network |
+| Readable heuristic strategy (best reward among high-probability ads) | "Keep it simple" — good-enough play without optimizer complexity | ✅ Good — Phase 2 `chooseAd` ranks by expected value (`reward × rank`) with an expiry-aware tiebreak and a least-bad-gamble fallback; all pure and TDD-covered |
+| Play a single game to game-over per CLI run | Simplest useful, demonstrable behavior | ✅ Good — Phase 3/4 `playGame` runs one full game to game-over; dual termination guards make non-termination impossible; live smoke confirmed end-to-end |
+| Mock the API in unit tests | Fast, deterministic TDD without network flakiness | ✅ Good — `FakeApiClient` (+ `vi.spyOn(fetch)` in `api.test.ts`) drives all 151 offline tests with zero live network |
+| Human-readable, leveled logging | Makes the bot's decisions easy to follow and review | ✅ Good — Phase 4 `ConsoleLogger` (pino + pino-pretty) narrates INFO/WARN/DEBUG per turn; always-visible FINAL SCORE banner; 3-way exit code (0/1/2) |
 
 ## Evolution
 
@@ -134,4 +161,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-11 after Phase 4 (logger, CLI & live smoke) completion — milestone v1.0 complete*
+*Last updated: 2026-06-11 after v1.0 "Autoplay Bot" milestone completion (audit passed, archived, tagged)*
