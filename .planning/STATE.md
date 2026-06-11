@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-11 after v1.0 milestone completion)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-06-11 — Milestone v1.0 completed and archived
+Last activity: 2026-06-11 — Completed quick task 260611-khz: Add README.md
 
 ## Performance Metrics
 
@@ -121,6 +121,12 @@ None yet.
 
 - None open. (Resolved in v1.0: base URL defaults to the non-`www` host with a `MUGLOAR_BASE_URL`
   override in `api.ts`; the live smoke confirmed the real API is reachable and a full game completes.)
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260611-khz | Add README.md with prerequisites, install, tests, linter, game, CLI options | 2026-06-11 | b9d6902 | [260611-khz-add-readme-md-with-prerequisites-install](./quick/260611-khz-add-readme-md-with-prerequisites-install/) |
 
 ## Deferred Items
 
